@@ -27,6 +27,12 @@ $$;
 revoke all on function public.is_superadmin() from public;
 grant execute on function public.is_superadmin(), public.is_admin() to authenticated;
 
+create or replace function public.profile_sensitive_unchanged(p_id uuid,p_role public.app_role,p_tipo public.tipo_jogador,p_mensalista boolean,p_ativo boolean,p_posicao public.posicao_lista) returns boolean language sql stable security definer set search_path='' as $$
+  select exists(select 1 from public.profiles where id=p_id and role=p_role and tipo_jogador=p_tipo and mensalista_ativo=p_mensalista and ativo=p_ativo and posicao_lista=p_posicao);
+$$;
+revoke all on function public.profile_sensitive_unchanged(uuid,public.app_role,public.tipo_jogador,boolean,boolean,public.posicao_lista) from public;
+grant execute on function public.profile_sensitive_unchanged(uuid,public.app_role,public.tipo_jogador,boolean,boolean,public.posicao_lista) to authenticated;
+
 -- Admin altera somente a classificação esportiva/financeira; roles ficam com o superadmin.
 create or replace function public.admin_definir_jogador(p_user_id uuid,p_tipo public.tipo_jogador,p_posicao public.posicao_lista) returns void language plpgsql security definer set search_path='' as $$
 begin
@@ -74,11 +80,41 @@ begin
 end $$;
 
 create or replace function public.entrar_na_pelada(p_pelada_id uuid) returns text language sql security definer set search_path='' as $$ select public.responder_pelada(p_pelada_id,true) $$;
+
+create or replace function public.sair_da_pelada(p_pelada_id uuid) returns void language plpgsql security definer set search_path='' as $$
+declare v_old public.participante_status; v_categoria public.posicao_lista;
+begin
+  perform 1 from public.peladas where id=p_pelada_id and fase_lista in ('mensalistas','geral') for update;
+  if not found then raise exception 'Lista indisponível'; end if;
+  select status,categoria into v_old,v_categoria from public.pelada_participantes where pelada_id=p_pelada_id and user_id=auth.uid() for update;
+  if not found then raise exception 'Inscrição não encontrada'; end if;
+  update public.pelada_participantes set status='cancelado',updated_at=now() where pelada_id=p_pelada_id and user_id=auth.uid();
+  if v_old in ('confirmado','presente') and v_categoria='linha' then
+    update public.pelada_participantes set status='confirmado',updated_at=now() where id=(select id from public.pelada_participantes where pelada_id=p_pelada_id and status='espera' and categoria='linha' order by ordem_entrada for update skip locked limit 1);
+  end if;
+end $$;
+
+create or replace function public.admin_gerenciar_participante(p_pelada_id uuid,p_user_id uuid,p_acao text) returns void language plpgsql security definer set search_path='' as $$
+declare v_old public.participante_status; v_categoria public.posicao_lista;
+begin
+  if not public.is_admin() then raise exception 'Acesso negado'; end if;
+  perform 1 from public.peladas where id=p_pelada_id for update;
+  if p_acao='add' then insert into public.pelada_participantes(pelada_id,user_id,status,categoria) select p_pelada_id,id,'confirmado',posicao_lista from public.profiles where id=p_user_id on conflict(pelada_id,user_id) do update set status='confirmado',categoria=excluded.categoria,updated_at=now();
+  elsif p_acao='remove' then
+    select status,categoria into v_old,v_categoria from public.pelada_participantes where pelada_id=p_pelada_id and user_id=p_user_id for update;
+    update public.pelada_participantes set status='cancelado',updated_at=now() where pelada_id=p_pelada_id and user_id=p_user_id;
+    if v_old in ('confirmado','presente') and v_categoria='linha' then update public.pelada_participantes set status='confirmado',updated_at=now() where id=(select id from public.pelada_participantes where pelada_id=p_pelada_id and status='espera' and categoria='linha' order by ordem_entrada for update skip locked limit 1); end if;
+  elsif p_acao='promote' then update public.pelada_participantes set status='confirmado',updated_at=now() where pelada_id=p_pelada_id and user_id=p_user_id;
+  elsif p_acao in ('presente','faltou') then update public.pelada_participantes set status=p_acao::public.participante_status,updated_at=now() where pelada_id=p_pelada_id and user_id=p_user_id;
+  else raise exception 'Ação inválida'; end if;
+end $$;
 revoke all on function public.abrir_lista_mensalistas(uuid),public.definir_fase_lista(uuid,public.lista_fase),public.responder_pelada(uuid,boolean) from public;
 grant execute on function public.abrir_lista_mensalistas(uuid),public.definir_fase_lista(uuid,public.lista_fase),public.responder_pelada(uuid,boolean) to authenticated;
 
 drop policy if exists profiles_admin on public.profiles;
 drop policy if exists profiles_superadmin on public.profiles;
+drop policy if exists profiles_self_update on public.profiles;
+create policy profiles_self_update on public.profiles for update to authenticated using(id=auth.uid()) with check(id=auth.uid() and public.profile_sensitive_unchanged(id,role,tipo_jogador,mensalista_ativo,ativo,posicao_lista));
 create policy profiles_superadmin on public.profiles for all to authenticated using(public.is_superadmin()) with check(public.is_superadmin());
 drop policy if exists series_read on public.pelada_series;
 drop policy if exists series_admin on public.pelada_series;

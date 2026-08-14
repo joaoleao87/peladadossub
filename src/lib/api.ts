@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { ListPhase, ListPosition, Participant, Payment, Pelada, PlayerType, Profile, RankingRow, Role } from './database.types'
+import type { ListPhase, ListPosition, Participant, Payment, Pelada, PeladaSeries, PlayerType, Profile, RankingRow, Role } from './database.types'
 
 export async function nextPelada() { const { data, error } = await supabase.from('peladas').select('*').gte('data', new Date().toISOString().slice(0, 10)).neq('status', 'cancelada').order('data').order('horario').limit(1).maybeSingle(); if (error) throw error; return data as Pelada | null }
 export async function participants(peladaId: string) { const { data, error } = await supabase.from('pelada_participantes').select('*, profile:profiles!user_id(*)').eq('pelada_id', peladaId).neq('status', 'cancelado').order('ordem_entrada'); if (error) throw error; return data as Participant[] }
@@ -15,6 +15,9 @@ export async function setListPhase(id: string, fase: ListPhase) { const { error 
 export async function respondPelada(id: string, vai: boolean) { const { data, error } = await supabase.rpc('responder_pelada', { p_pelada_id: id, p_vai: vai }); if (error) throw error; return data as string }
 export async function updateOwnProfile(values: Pick<Profile,'nome'|'apelido'|'telefone'|'foto_url'>) { const { error } = await supabase.from('profiles').update(values).eq('id', (await supabase.auth.getUser()).data.user?.id); if (error) throw error }
 export async function createUser(values: { nome:string; email:string; role:Role; tipo_jogador:PlayerType; posicao_lista:ListPosition }) { const { data, error } = await supabase.functions.invoke('create-user', { body: values }); if (error) throw error; if (data?.error) throw new Error(data.error) }
+export async function activeSeries() { const { data,error }=await supabase.from('pelada_series').select('*').eq('ativa',true).limit(1).maybeSingle();if(error)throw error;return data as PeladaSeries|null }
+export async function saveSeries(values:Omit<PeladaSeries,'id'> & {id?:string}) { const {error}=values.id?await supabase.from('pelada_series').update(values).eq('id',values.id):await supabase.from('pelada_series').insert(values);if(error)throw error }
+export async function generateNextPelada(id:string){const {error}=await supabase.rpc('gerar_proxima_pelada',{p_serie_id:id});if(error)throw error}
 export async function adminParticipant(peladaId: string, userId: string, action: 'add' | 'remove' | 'promote' | 'presente' | 'faltou') { const { error } = await supabase.rpc('admin_gerenciar_participante', { p_pelada_id: peladaId, p_user_id: userId, p_acao: action }); if (error) throw error }
 export async function payments() { const { data, error } = await supabase.from('pagamentos').select('*, profile:profiles!user_id(*)').order('created_at', { ascending: false }); if (error) throw error; return data as Payment[] }
 export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'profile'>) { const { error } = await supabase.from('pagamentos').insert(values); if (error) throw error }
