@@ -1,0 +1,3 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+export function useLoad<T>(loader: () => Promise<T>, key: unknown = '') { const loaderRef = useRef(loader); loaderRef.current = loader; const stableKey = JSON.stringify(key); const [data, setData] = useState<T>(); const [error, setError] = useState(''); const [loading, setLoading] = useState(true); const load = useCallback(async () => { void stableKey; setLoading(true); setError(''); try { setData(await loaderRef.current()) } catch (err) { setError(err instanceof Error ? err.message : 'Falha ao carregar.') } finally { setLoading(false) } }, [stableKey]); useEffect(() => { void load() }, [load]); return { data, error, loading, reload: load } }

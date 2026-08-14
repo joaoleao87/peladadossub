@@ -1,0 +1,9 @@
+node_modules
+node_modules_broken
+dist
+.env
+.env.local
+*.log
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

@@ -1,0 +1,8 @@
+import { LogOut } from '../components/Icons'
+import { useAuth } from '../auth/AuthContext'
+import { Badge, ErrorState, Spinner } from '../components/Ui'
+import { useLoad } from '../hooks/useLoad'
+import { profileStats, rankings } from '../lib/api'
+import { supabase } from '../lib/supabase'
+
+export function ProfilePage() { const { profile } = useAuth(); const state = useLoad(async () => ({ stats: await profileStats(profile!.id), ranks: await rankings() }), [profile?.id]); if (!profile || state.loading) return <Spinner/>; if (state.error) return <ErrorState message={state.error} retry={state.reload}/>; const stats = state.data!.stats, position = (tipo: 'sub_bom'|'sub_ruim') => { const rows = state.data!.ranks.filter(r => r.tipo === tipo).sort((a,b) => b.pontos-a.pontos); const found = rows.findIndex(r => r.user_id === profile.id); return found < 0 ? '—' : `${found+1}º` }; return <section><div className="profile-head"><div className="profile-avatar">{profile.foto_url ? <img src={profile.foto_url} alt=""/> : (profile.apelido || profile.nome)[0]}</div><h1>{profile.apelido || profile.nome}</h1><p>{profile.nome}</p><Badge>{profile.tipo_jogador.toUpperCase()}</Badge></div><div className="stats"><div><strong>{stats.participacoes}</strong><span>Partidas</span></div><div><strong>{stats.presencas}</strong><span>Presenças</span></div><div><strong>{stats.faltas}</strong><span>Faltas</span></div><div><strong>{position('sub_bom')}</strong><span>SUB Craques</span></div><div><strong>{position('sub_ruim')}</strong><span>SUB Ruins</span></div><div><strong>{stats.premiacoes.length}</strong><span>Prêmios</span></div></div><button className="secondary full" onClick={() => supabase.auth.signOut()}><LogOut/> SAIR DA CONTA</button></section> }
