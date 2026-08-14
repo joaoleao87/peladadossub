@@ -1,1 +1,2 @@
 .answer-actions{border-top:1px solid #3b3d36;margin-top:22px;padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.answer-actions b{grid-column:1/-1;text-align:center;color:var(--yellow);font-size:12px}.phase-actions{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}
+.header-logo{width:92px;height:56px;object-fit:contain}.auth-logo{width:210px;height:210px;object-fit:contain;align-self:center;margin-bottom:18px}
