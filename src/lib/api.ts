@@ -35,3 +35,5 @@ export async function adminParticipant(peladaId: string, userId: string, action:
 export async function adminParticipantById(id:string,action:'remove'|'promote'|'presente'|'faltou'){const {error}=await supabase.rpc('admin_gerenciar_participante_id',{p_participante_id:id,p_acao:action});if(error)throw error}
 export async function payments() { const { data, error } = await supabase.from('pagamentos').select('*, profile:profiles!user_id(*), player:jogadores!jogador_id(*)').order('created_at', { ascending: false }); if (error) throw error; return data as Payment[] }
 export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'profile'>) { const { error } = await supabase.from('pagamentos').insert(values); if (error) throw error }
+export async function peladasHistory(){const {data,error}=await supabase.from('peladas').select('*').neq('status','cancelada').order('data',{ascending:false}).order('horario',{ascending:false}).limit(30);if(error)throw error;return data as Pelada[]}
+export async function createMonthlyInvite(){const {data,error}=await supabase.rpc('criar_convite_mensalista');if(error)throw error;return data as string}

@@ -1,16 +1,16 @@
 import { useState,type FormEvent } from 'react'
 import { Bar,BarChart,ResponsiveContainer,Tooltip,XAxis } from 'recharts'
 import { useLoad } from '../hooks/useLoad'
-import { activeSeries,generateCasualCharges,generateMonthlyCharges,nextPelada,payments,receiptUrl,refreshLatePayments,saveFinanceConfig,updatePayment } from '../lib/api'
+import { activeSeries,generateCasualCharges,generateMonthlyCharges,payments,peladasHistory,receiptUrl,refreshLatePayments,saveFinanceConfig,updatePayment } from '../lib/api'
 import type { Payment,PaymentStatus } from '../lib/database.types'
 import { Badge,Empty,ErrorState,Spinner,Toast } from './Ui'
 
 const money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})
 export function FinancePanel(){
-  const state=useLoad(async()=>{await refreshLatePayments();const [series,items,game]=await Promise.all([activeSeries(),payments(),nextPelada()]);return{series,items,game}})
-  const [toast,setToast]=useState(''),[filter,setFilter]=useState<'todos'|PaymentStatus>('todos')
+  const state=useLoad(async()=>{await refreshLatePayments();const [series,items,games]=await Promise.all([activeSeries(),payments(),peladasHistory()]);return{series,items,games}})
+  const [toast,setToast]=useState(''),[filter,setFilter]=useState<'todos'|PaymentStatus>('todos');const gameId=''
   if(state.loading)return <Spinner/>;if(state.error)return <ErrorState message={state.error} retry={state.reload}/>
-  const {series,items,game}=state.data!,feedback=(m:string)=>{setToast(m);setTimeout(()=>setToast(''),3500)}
+  const {series,items,games}=state.data!,game=games.find(x=>x.id===gameId)||games[0],feedback=(m:string)=>{setToast(m);setTimeout(()=>setToast(''),3500)}
   async function run(action:()=>Promise<unknown>,message:string){try{await action();feedback(message);await state.reload()}catch(err){feedback(err instanceof Error?err.message:'Não foi possível concluir.')}}
   async function config(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!series)return;const f=new FormData(e.currentTarget);await run(()=>saveFinanceConfig(series.id,{valor_mensalista:Number(f.get('mensal')),valor_avulso:Number(f.get('avulso')),dia_vencimento:Number(f.get('vencimento')),chave_pix:String(f.get('pix'))}),'Configuração atualizada.')}
   async function proof(payment:Payment){if(!payment.comprovante_path)return;try{open(await receiptUrl(payment.comprovante_path),'_blank','noopener,noreferrer')}catch(err){feedback(err instanceof Error?err.message:'Falha ao abrir comprovante.')}}
