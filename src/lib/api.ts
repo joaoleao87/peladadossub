@@ -37,3 +37,4 @@ export async function payments() { const { data, error } = await supabase.from('
 export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'profile'>) { const { error } = await supabase.from('pagamentos').insert(values); if (error) throw error }
 export async function peladasHistory(){const {data,error}=await supabase.from('peladas').select('*').neq('status','cancelada').order('data',{ascending:false}).order('horario',{ascending:false}).limit(30);if(error)throw error;return data as Pelada[]}
 export async function createMonthlyInvite(){const {data,error}=await supabase.rpc('criar_convite_mensalista');if(error)throw error;return data as string}
+export async function deletePlayer(id:string){const {error}=await supabase.rpc('excluir_jogador',{p_id:id});if(error)throw error}
