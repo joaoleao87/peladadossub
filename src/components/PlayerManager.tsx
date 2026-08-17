@@ -3,6 +3,8 @@ import {
   allPlayers,
   allProfiles,
   deletePlayer,
+  rankingStats,
+  ratePlayer,
   savePlayer,
   setMonthlyExemption,
 } from "../lib/api";
@@ -13,17 +15,18 @@ import "./player-manager.css";
 
 export function PlayerManager() {
   const state = useLoad(async () => {
-      const [players, profiles] = await Promise.all([
+      const [players, profiles, ranking] = await Promise.all([
         allPlayers(),
         allProfiles(),
+        rankingStats(),
       ]);
-      return { players, profiles };
+      return { players, profiles, ranking };
     }),
     [toast, setToast] = useState("");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const { players, profiles } = state.data!;
+  const { players, profiles, ranking } = state.data!;
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -77,7 +80,8 @@ export function PlayerManager() {
         <p>
           <b>Conta de acesso</b> liga o jogador ao login dele.{" "}
           <b>Tipo de cobrança</b> define mensalista ou avulso. <b>Posição</b>{" "}
-          define linha ou goleiro.
+          define linha ou goleiro. <b>Equilíbrio</b> é a nota do admin para o
+          sorteio; <b>desempenho</b> é a média dos votos após as peladas.
         </p>
       </header>
       <details className="player-create">
@@ -138,9 +142,13 @@ export function PlayerManager() {
         </form>
       </details>
       <ul className="players-list">
-        {players.map((player) => (
-          <li className="player-card" key={player.id}>
-            <details>
+        {players.map((player) => {
+          const performance = ranking.find(
+            (item) => item.jogador_id === player.id,
+          );
+          return (
+            <li className="player-card" key={player.id}>
+              <details>
               <summary>
                 <span>
                   <b>{player.apelido || player.nome}</b>
@@ -151,6 +159,14 @@ export function PlayerManager() {
                 <span className="player-tags">
                   <em>{player.tipo}</em>
                   <em>{player.posicao}</em>
+                  <em>equilíbrio {player.nota_equilibrio ?? 3}</em>
+                  {performance?.media_nota !== null &&
+                    performance?.media_nota !== undefined && (
+                      <em>
+                        desempenho{" "}
+                        {performance.media_nota.toLocaleString("pt-BR")}
+                      </em>
+                    )}
                   {player.isento_mensalidade && <em>isento</em>}
                 </span>
               </summary>
@@ -238,6 +254,39 @@ export function PlayerManager() {
                     ))}
                   </div>
                 </fieldset>
+                <fieldset className="player-balance-rating">
+                  <legend>Nota de equilíbrio</legend>
+                  <small>Usada somente para montar times equilibrados.</small>
+                  <div>
+                    {[1, 2, 3, 4, 5].map((note) => (
+                      <button
+                        type="button"
+                        className={
+                          (player.nota_equilibrio ?? 3) === note ? "active" : ""
+                        }
+                        aria-pressed={(player.nota_equilibrio ?? 3) === note}
+                        onClick={() =>
+                          void run(
+                            () => ratePlayer(player.id, note),
+                            "Nota de equilíbrio atualizada.",
+                          )
+                        }
+                        key={note}
+                      >
+                        {note}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <div className="player-performance-summary">
+                  <span>
+                    <b>Média de desempenho</b>
+                    <small>Nota dada pelos participantes depois do jogo.</small>
+                  </span>
+                  <strong>
+                    {performance?.media_nota?.toLocaleString("pt-BR") ?? "—"}
+                  </strong>
+                </div>
                 {player.tipo === "mensalista" && (
                   <div className="player-exemption">
                     <span>
@@ -281,9 +330,10 @@ export function PlayerManager() {
                   </button>
                 </footer>
               </section>
-            </details>
-          </li>
-        ))}
+              </details>
+            </li>
+          );
+        })}
       </ul>
       <Toast message={toast} />
     </section>

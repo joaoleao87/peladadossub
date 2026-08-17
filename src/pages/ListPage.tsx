@@ -401,6 +401,13 @@ export function ListPage() {
         {new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} •{" "}
         {game.horario.slice(0, 5)}
       </p>
+      {started && canVote && (
+        <p className="voting-notice voting-ready">
+          <b>Como votar:</b> dê sua nota nos botões “Minha nota” de cada
+          jogador. Depois escolha destaque, surpresa e destaque negativo no
+          final da lista.
+        </p>
+      )}
       {group("Confirmados", line)}
       {group("Suplentes", waiting)}
       {group("Goleiros", keepers)}
@@ -452,7 +459,9 @@ export function ListPage() {
       )}
       {started && !canVote && (
         <p className="voting-notice">
-          A votação é liberada somente para quem participou desta pelada.
+          {isAdmin
+            ? "Você pode registrar os gols como admin. Para dar notas e votar nos destaques, sua conta precisa estar vinculada a um jogador confirmado nesta pelada."
+            : "A votação é liberada somente para contas vinculadas aos jogadores que participaram desta pelada."}
         </p>
       )}
       <TeamDraw

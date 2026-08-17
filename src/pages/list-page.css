@@ -166,6 +166,14 @@
   border: 1px solid #30332b;
   border-radius: 8px;
 }
+.voting-notice b {
+  color: #fff;
+}
+.voting-ready {
+  border-color: #406a4d;
+  background: #142019;
+  line-height: 1.55;
+}
 @media (max-width: 480px) {
   .interactive-player {
     flex-wrap: wrap;

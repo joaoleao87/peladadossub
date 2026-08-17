@@ -68,14 +68,20 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
             <button
               type="button"
               onClick={() =>
+                (!members.length ||
+                  confirm(
+                    "Sortear novamente? A formação atual será substituída e voltará para rascunho.",
+                  )) &&
                 void run(
                   () => generateTeamDraw(game.id),
-                  "Times sorteados. Revise antes de liberar.",
+                  members.length
+                    ? "Novo sorteio gerado. Revise antes de liberar."
+                    : "Times sorteados. Revise antes de liberar.",
                   true,
                 )
               }
             >
-              Gerar sorteio
+              {members.length ? "Sortear novamente" : "Gerar sorteio"}
             </button>
             <button
               type="button"
