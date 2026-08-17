@@ -12,6 +12,106 @@ import {
   respondPelada,
 } from "../lib/api";
 
+function HomeTutorial({
+  isAdmin,
+  isSuperAdmin,
+  linked,
+}: {
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  linked: boolean;
+}) {
+  return (
+    <section className="home-tutorial" aria-labelledby="tutorial-title">
+      <p className="eyebrow">GUIA RÁPIDO</p>
+      <h2 id="tutorial-title">Como usar o app</h2>
+      <p className={`tutorial-status ${linked ? "linked" : ""}`}>
+        {linked
+          ? "Sua conta está vinculada: você já pode participar das peladas."
+          : isAdmin
+            ? "Seu acesso administrativo está ativo, mas vincule um jogador à sua conta para entrar na lista e votar."
+            : "Sua conta ainda não está vinculada: por enquanto você pode ver a lista, o sorteio e o ranking."}
+      </p>
+      <details className="tutorial-card" open={!isAdmin}>
+        <summary>
+          <span>Tutorial do jogador</span>
+          <small>Lista, votação, ranking e pagamentos</small>
+        </summary>
+        <ol>
+          <li>
+            <b>Entre na lista.</b> Mensalistas confirmam quando a fase deles
+            abrir. Avulsos entram quando o admin liberar a lista geral.
+          </li>
+          <li>
+            <b>Acompanhe sua posição.</b> Veja confirmados, goleiros e
+            suplentes. Se alguém sair, o primeiro suplente é promovido.
+          </li>
+          <li>
+            <b>Veja os times.</b> O sorteio aparece na Lista depois que o admin
+            liberar o resultado.
+          </li>
+          <li>
+            <b>Avalie depois do jogo.</b> Quem participou dá notas de 1 a 5 aos
+            demais e vota em destaque, surpresa e destaque negativo.
+          </li>
+          <li>
+            <b>Consulte seus dados.</b> Ranking mostra resultados agrupados; no
+            Perfil ficam estatísticas, cobranças e envio de comprovante.
+          </li>
+        </ol>
+        <nav className="tutorial-links" aria-label="Atalhos do jogador">
+          <Link to="/lista">Abrir lista</Link>
+          <Link to="/ranking">Ver ranking</Link>
+          <Link to="/perfil">Perfil e pagamentos</Link>
+        </nav>
+      </details>
+      {isAdmin && (
+        <details className="tutorial-card admin-tutorial" open>
+          <summary>
+            <span>Tutorial do admin</span>
+            <small>Pelada, jogadores, sorteio e financeiro</small>
+          </summary>
+          <ol>
+            <li>
+              <b>Prepare a pelada.</b> No Admin, configure a recorrência, gere a
+              próxima ocorrência e revise data, horário e local.
+            </li>
+            <li>
+              <b>Organize os jogadores.</b> Vincule contas, defina mensalista ou
+              avulso, posição e isenção na aba Jogadores.
+            </li>
+            <li>
+              <b>Controle a lista.</b> Na Lista, libere mensalistas ou avulsos,
+              adicione nomes e mova jogadores entre confirmados e suplentes.
+            </li>
+            <li>
+              <b>Monte os times.</b> Ajuste a nota de equilíbrio, gere o sorteio,
+              revise os times e só então libere para os jogadores.
+            </li>
+            <li>
+              <b>Feche o jogo.</b> Depois da pelada, registre os gols. No
+              Financeiro, gere cobranças por mês ou por pelada e controle
+              comprovantes e despesas.
+            </li>
+            {isSuperAdmin && (
+              <li>
+                <b>Gerencie acessos.</b> Em Usuários, altere os níveis de
+                permissão e vincule logins aos jogadores.
+              </li>
+            )}
+          </ol>
+          <nav className="tutorial-links" aria-label="Atalhos do admin">
+            <Link to="/admin">Abrir Admin</Link>
+            <Link to="/lista">Controlar lista</Link>
+            <Link to="/financeiro">Abrir financeiro</Link>
+            {isSuperAdmin && <Link to="/superadmin">Gerenciar usuários</Link>}
+          </nav>
+        </details>
+      )}
+    </section>
+  );
+}
+
 export function Dashboard() {
   const { profile } = useAuth(),
     state = useLoad(async () => {
@@ -27,7 +127,16 @@ export function Dashboard() {
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const game = state.data?.game;
+  const game = state.data?.game,
+    player = state.data?.player,
+    isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
+    tutorial = (
+      <HomeTutorial
+        isAdmin={isAdmin}
+        isSuperAdmin={profile?.role === "superadmin"}
+        linked={Boolean(player)}
+      />
+    );
   if (!game)
     return (
       <section>
@@ -38,6 +147,7 @@ export function Dashboard() {
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
         </Empty>
+        {tutorial}
       </section>
     );
   const gameId = game.id,
@@ -100,7 +210,7 @@ export function Dashboard() {
       setBusy(false);
     }
   }
-  const action = !state.data?.player ? (
+  const action = !player ? (
     <div className="opening-card">
       <b>Conta aguardando vínculo</b>
       <span>Você pode acompanhar a lista enquanto um administrador vincula seu jogador.</span>
@@ -205,6 +315,7 @@ export function Dashboard() {
         <span>Ver lista completa</span>
         <ArrowRight />
       </Link>
+      {tutorial}
       <Toast message={toast} />
     </section>
   );
