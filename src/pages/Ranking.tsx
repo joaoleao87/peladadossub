@@ -1,5 +1,80 @@
-import { Empty, ErrorState, Spinner } from '../components/Ui'
-import { useLoad } from '../hooks/useLoad'
-import { rankings } from '../lib/api'
+import { Empty, ErrorState, Spinner } from "../components/Ui";
+import { useLoad } from "../hooks/useLoad";
+import { rankingStats } from "../lib/api";
+import type { RankingStats } from "../lib/database.types";
+import "./ranking.css";
 
-export function Ranking() { const state = useLoad(rankings, []); if (state.loading) return <Spinner/>; if (state.error) return <ErrorState message={state.error} retry={state.reload}/>; const render = (tipo: 'sub_bom'|'sub_ruim', label: string) => { const rows = (state.data ?? []).filter(r => r.tipo === tipo).sort((a,b) => b.pontos-a.pontos); return <div className={`ranking-card ${tipo}`}><h2>{label}</h2>{rows.length ? rows.map((r,i) => <div className="rank" key={r.user_id}><b>{i+1}</b><span>{r.profile?.apelido || r.profile?.nome}</span><strong>{r.pontos} pts</strong></div>) : <Empty title="O ranking começa depois da próxima pelada."/>}</div> }; return <section><p className="eyebrow">A RESENHA TÁ VALENDO</p><h1>Ranking</h1>{render('sub_bom','SUB CRAQUES')}{render('sub_ruim','SUB RUINS')}</section> }
+export function Ranking() {
+  const state = useLoad(rankingStats, []);
+  if (state.loading) return <Spinner />;
+  if (state.error)
+    return <ErrorState message={state.error} retry={state.reload} />;
+  const rows = state.data ?? [];
+  const board = (
+    title: string,
+    metric: (row: RankingStats) => number,
+    value: (row: RankingStats) => string,
+    detail: (row: RankingStats) => string,
+  ) => {
+    const ranked = rows
+      .filter((row) => metric(row) > 0)
+      .sort((a, b) => metric(b) - metric(a));
+    return (
+      <section className="ranking-card">
+        <h2>{title}</h2>
+        {ranked.length ? (
+          ranked.map((row, index) => (
+            <div className="rank performance-rank" key={row.jogador_id}>
+              <b>{index + 1}</b>
+              <span>
+                {row.apelido || row.nome}
+                <small>{detail(row)}</small>
+              </span>
+              <strong>{value(row)}</strong>
+            </div>
+          ))
+        ) : (
+          <Empty title="Ainda sem resultados" />
+        )}
+      </section>
+    );
+  };
+  return (
+    <section>
+      <p className="eyebrow">DESEMPENHO DAS PELADAS</p>
+      <h1>Ranking</h1>
+      <div className="ranking-grid">
+        {board(
+          "Melhores notas",
+          (row) => row.media_nota ?? 0,
+          (row) => (row.media_nota ?? 0).toLocaleString("pt-BR"),
+          (row) => `${row.total_avaliacoes} avaliações`,
+        )}
+        {board(
+          "Artilharia",
+          (row) => row.gols,
+          (row) => `${row.gols} gols`,
+          (row) => `${row.jogos} peladas`,
+        )}
+        {board(
+          "Destaques",
+          (row) => row.votos_destaque,
+          (row) => `${row.votos_destaque} votos`,
+          (row) => `${row.jogos} peladas`,
+        )}
+        {board(
+          "Surpresas",
+          (row) => row.votos_surpresa,
+          (row) => `${row.votos_surpresa} votos`,
+          (row) => `${row.jogos} peladas`,
+        )}
+        {board(
+          "Destaques negativos",
+          (row) => row.votos_negativo,
+          (row) => `${row.votos_negativo} votos`,
+          (row) => `${row.jogos} peladas`,
+        )}
+      </div>
+    </section>
+  );
+}

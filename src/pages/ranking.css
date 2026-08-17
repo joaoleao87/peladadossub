@@ -1,0 +1,33 @@
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ranking-grid .ranking-card {
+  min-width: 0;
+  margin: 0;
+}
+.performance-rank span {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.performance-rank small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 400;
+}
+.performance-rank strong {
+  color: var(--yellow);
+  text-align: right;
+}
+.ranking-grid .empty {
+  min-height: 110px;
+}
+@media (max-width: 560px) {
+  .ranking-grid {
+    grid-template-columns: 1fr;
+  }
+}

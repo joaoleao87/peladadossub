@@ -6,7 +6,7 @@ import { Badge, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
   profileStats,
-  rankings,
+  rankingStats,
   updateOwnProfile,
   uploadAvatar,
 } from "../lib/api";
@@ -17,7 +17,7 @@ export function ProfilePage() {
     state = useLoad(
       async () => ({
         stats: await profileStats(profile!.id),
-        ranks: await rankings(),
+        ranking: await rankingStats(),
       }),
       [profile?.id],
     ),
@@ -28,13 +28,9 @@ export function ProfilePage() {
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const stats = state.data!.stats,
-    position = (tipo: "sub_bom" | "sub_ruim") => {
-      const rows = state
-          .data!.ranks.filter((r) => r.tipo === tipo)
-          .sort((a, b) => b.pontos - a.pontos),
-        found = rows.findIndex((r) => r.user_id === profile.id);
-      return found < 0 ? "—" : `${found + 1}º`;
-    };
+    performance = state.data!.ranking.find(
+      (row) => row.user_id === profile.id,
+    );
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -88,16 +84,18 @@ export function ProfilePage() {
           <span>Faltas</span>
         </div>
         <div>
-          <strong>{position("sub_bom")}</strong>
-          <span>SUB Craques</span>
+          <strong>{performance?.gols ?? 0}</strong>
+          <span>Gols</span>
         </div>
         <div>
-          <strong>{position("sub_ruim")}</strong>
-          <span>SUB Ruins</span>
+          <strong>
+            {performance?.media_nota?.toLocaleString("pt-BR") ?? "—"}
+          </strong>
+          <span>Nota média</span>
         </div>
         <div>
-          <strong>{stats.premiacoes.length}</strong>
-          <span>Prêmios</span>
+          <strong>{performance?.votos_destaque ?? 0}</strong>
+          <span>Destaques</span>
         </div>
       </div>
       <MyPayments />

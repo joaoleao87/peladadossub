@@ -22,6 +22,7 @@ export type ParticipantStatus =
   | "presente"
   | "faltou";
 export type PaymentStatus = "pendente" | "pago" | "isento" | "atrasado";
+export type VoteCategory = "destaque" | "surpresa" | "negativo";
 
 export interface Profile {
   id: string;
@@ -93,6 +94,7 @@ export interface Participant {
   ordem_entrada: number;
   status: ParticipantStatus;
   categoria: ListPosition;
+  gols?: number;
   profile?: Profile;
   player?: Player;
 }
@@ -115,11 +117,18 @@ export interface Payment {
   profile?: Profile;
   player?: Player;
 }
-export interface RankingRow {
+export interface RankingStats {
+  jogador_id: string;
   user_id: string;
-  tipo: "sub_bom" | "sub_ruim";
-  pontos: number;
-  profile?: Profile;
+  nome: string;
+  apelido: string | null;
+  jogos: number;
+  gols: number;
+  media_nota: number | null;
+  total_avaliacoes: number;
+  votos_destaque: number;
+  votos_surpresa: number;
+  votos_negativo: number;
 }
 export interface ExpenseInstallment {
   id: string;

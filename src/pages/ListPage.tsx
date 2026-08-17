@@ -7,12 +7,16 @@ import {
   adminAddPlayer,
   adminParticipantById,
   allPlayers,
+  myMatchVotes,
   participants,
   peladasHistory,
+  rateMatchPerformance,
   ratePlayer,
+  setParticipantGoals,
   setListPhase,
+  voteMatchAward,
 } from "../lib/api";
-import type { Participant } from "../lib/database.types";
+import type { Participant, VoteCategory } from "../lib/database.types";
 import "./list-page.css";
 
 export function ListPage() {
@@ -36,11 +40,22 @@ export function ListPage() {
       lists: Object.fromEntries(entries) as Record<string, Participant[]>,
     };
   });
+  const activeGameId = selected || state.data?.games[0]?.id || "",
+    voting = useLoad(
+      () =>
+        activeGameId
+          ? myMatchVotes(activeGameId)
+          : Promise.resolve({
+              ratings: {} as Record<string, number>,
+              votes: {} as Partial<Record<VoteCategory, string>>,
+            }),
+      activeGameId,
+    );
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const games = state.data?.games ?? [],
-    game = games.find((item) => item.id === (selected || games[0]?.id));
+    game = games.find((item) => item.id === activeGameId);
   if (!game)
     return (
       <section>
@@ -58,7 +73,14 @@ export function ListPage() {
     line = confirmed.filter((item) => item.categoria === "linha"),
     waiting = current.filter((item) => item.status === "espera"),
     keepers = confirmed.filter((item) => item.categoria === "goleiro"),
-    pending = current.filter((item) => item.status === "aguardando_resposta");
+    pending = current.filter((item) => item.status === "aguardando_resposta"),
+    started =
+      new Date(`${game.data}T${game.horario}`).getTime() <= Date.now(),
+    canVote =
+      started &&
+      confirmed.some((item) => item.user_id === profile?.id),
+    voteTargets = confirmed.filter((item) => item.user_id !== profile?.id),
+    myVotes = voting.data ?? { ratings: {}, votes: {} };
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -85,6 +107,19 @@ export function ListPage() {
     );
     form.reset();
   }
+  async function vote(action: () => Promise<unknown>, message: string) {
+    try {
+      await action();
+      setToast(message);
+      await voting.reload();
+    } catch (err) {
+      setToast(
+        err instanceof Error ? err.message : "Não foi possível registrar.",
+      );
+    } finally {
+      setTimeout(() => setToast(""), 3500);
+    }
+  }
   const playerName = (item: Participant) =>
     item.player?.apelido ||
     item.player?.nome ||
@@ -102,7 +137,9 @@ export function ListPage() {
           const name = playerName(item);
           return (
             <div
-              className={`player ${isAdmin ? "admin-player" : ""} ${
+              className={`player ${
+                isAdmin || canVote ? "interactive-player" : ""
+              } ${
                 item.user_id === profile?.id ? "me" : ""
               }`}
               key={item.id}
@@ -119,17 +156,17 @@ export function ListPage() {
                 {name}
                 {item.user_id === profile?.id && <small> VOCÊ</small>}
               </span>
-              {isAdmin && (
+              {(isAdmin || canVote) && (
                 <nav
                   className="list-player-actions"
                   aria-label={`Ações para ${name}`}
                 >
-                  {item.categoria === "linha" && (
+                  {isAdmin && !started && item.categoria === "linha" && (
                     <span
                       className="list-player-rating"
-                      aria-label={`Nota de ${name}`}
+                      aria-label={`Nota de equilíbrio de ${name}`}
                     >
-                      <small>Nota</small>
+                      <small>Equilíbrio</small>
                       {[1, 2, 3, 4, 5].map((rating) => (
                         <button
                           type="button"
@@ -154,7 +191,86 @@ export function ListPage() {
                       ))}
                     </span>
                   )}
-                  {item.status === "espera" ? (
+                  {canVote &&
+                    item.user_id !== profile?.id &&
+                    ["confirmado", "presente"].includes(item.status) && (
+                      <span
+                        className="list-player-rating performance-rating"
+                        aria-label={`Sua nota de desempenho para ${name}`}
+                      >
+                        <small>Minha nota</small>
+                        {[1, 2, 3, 4, 5].map((note) => (
+                          <button
+                            type="button"
+                            className={`mini ${
+                              myVotes.ratings[item.jogador_id] === note
+                                ? "active"
+                                : "secondary"
+                            }`}
+                            aria-pressed={
+                              myVotes.ratings[item.jogador_id] === note
+                            }
+                            disabled={voting.loading}
+                            onClick={() =>
+                              void vote(
+                                () =>
+                                  rateMatchPerformance(
+                                    game.id,
+                                    item.jogador_id,
+                                    note,
+                                  ),
+                                "Avaliação registrada.",
+                              )
+                            }
+                            key={note}
+                          >
+                            {note}
+                          </button>
+                        ))}
+                      </span>
+                    )}
+                  {isAdmin &&
+                    started &&
+                    ["confirmado", "presente"].includes(item.status) && (
+                      <span className="goal-control">
+                        <small>Gols</small>
+                        <button
+                          type="button"
+                          className="mini secondary"
+                          disabled={(item.gols ?? 0) === 0}
+                          onClick={() =>
+                            void run(
+                              () =>
+                                setParticipantGoals(
+                                  item.id,
+                                  Math.max(0, (item.gols ?? 0) - 1),
+                                ),
+                              "Gol removido.",
+                            )
+                          }
+                        >
+                          −
+                        </button>
+                        <b>{item.gols ?? 0}</b>
+                        <button
+                          type="button"
+                          className="mini"
+                          onClick={() =>
+                            void run(
+                              () =>
+                                setParticipantGoals(
+                                  item.id,
+                                  (item.gols ?? 0) + 1,
+                                ),
+                              "Gol registrado.",
+                            )
+                          }
+                        >
+                          +
+                        </button>
+                      </span>
+                    )}
+                  {isAdmin && !started && (item.status === "espera" ? (
                     <button
                       type="button"
                       className="mini"
@@ -182,7 +298,7 @@ export function ListPage() {
                         Suplente
                       </button>
                     )
-                  )}
+                  ))}
                 </nav>
               )}
             </div>
@@ -289,6 +405,56 @@ export function ListPage() {
       {group("Suplentes", waiting)}
       {group("Goleiros", keepers)}
       {isAdmin && pending.length > 0 && group("Aguardando resposta", pending)}
+      {started && voting.error && (
+        <p className="voting-notice">{voting.error}</p>
+      )}
+      {started && canVote && (
+        <section className="match-voting-panel">
+          <p className="eyebrow">VOTAÇÃO DA PELADA</p>
+          <h2>Escolha os destaques</h2>
+          <small>Você pode alterar seus votos quando quiser.</small>
+          <div>
+            {(
+              [
+                ["destaque", "Destaque"],
+                ["surpresa", "Surpresa"],
+                ["negativo", "Destaque negativo"],
+              ] as [VoteCategory, string][]
+            ).map(([category, label]) => (
+              <label key={category}>
+                {label}
+                <select
+                  value={myVotes.votes[category] ?? ""}
+                  disabled={voting.loading}
+                  onChange={(event) =>
+                    void vote(
+                      () =>
+                        voteMatchAward(
+                          game.id,
+                          category,
+                          event.target.value || null,
+                        ),
+                      "Voto registrado.",
+                    )
+                  }
+                >
+                  <option value="">Não selecionado</option>
+                  {voteTargets.map((item) => (
+                    <option value={item.jogador_id} key={item.jogador_id}>
+                      {playerName(item)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
+      {started && !canVote && (
+        <p className="voting-notice">
+          A votação é liberada somente para quem participou desta pelada.
+        </p>
+      )}
       <TeamDraw
         game={game}
         participants={list}
