@@ -3,6 +3,7 @@ import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
+  adminAddPlayer,
   adminParticipantById,
   adminSummary,
   allPlayers,
@@ -74,8 +75,9 @@ export function Admin() {
           horario: String(f.get("horario")),
           local: String(f.get("local")),
           limite_jogadores: 20,
-          antecedencia_mensalistas_horas: 24,
-          antecedencia_geral_horas: 12,
+          antecedencia_mensalistas_horas: 48,
+          antecedencia_geral_horas: 48,
+          antecedencia_saida_horas: 3,
           valor_mensalista: series?.valor_mensalista ?? 0,
           valor_avulso: series?.valor_avulso ?? 0,
           dia_vencimento: series?.dia_vencimento ?? 10,
@@ -167,6 +169,12 @@ export function Admin() {
       `${items.length} nomes importados.`,
     );
     setImportText("");
+  }
+  async function addToList(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!summary.pelada) return;
+    const jogadorId = String(new FormData(e.currentTarget).get("jogador_id"));
+    if (jogadorId) await run(() => adminAddPlayer(summary.pelada!.id, jogadorId), "Jogador adicionado.");
   }
   async function copyInvite() {
     try {
@@ -362,6 +370,16 @@ export function Admin() {
                   COPIAR WHATSAPP
                 </button>
               </div>
+              <form className="whatsapp-import" onSubmit={addToList}>
+                <label>
+                  Adicionar jogador à lista
+                  <select name="jogador_id" required defaultValue="">
+                    <option value="" disabled>Selecione…</option>
+                    {players.filter(player => !summary.list.some(item => item.jogador_id === player.id && item.status !== "cancelado")).map(player => <option key={player.id} value={player.id}>{player.apelido || player.nome}</option>)}
+                  </select>
+                </label>
+                <button>ADICIONAR MEMBRO</button>
+              </form>
               <div className="whatsapp-import">
                 <label>
                   Importar lista do WhatsApp
@@ -415,6 +433,9 @@ export function Admin() {
                         }
                       >
                         Presente
+                      </button>
+                      <button className="mini secondary" onClick={() => run(() => adminParticipantById(p.id, p.categoria === "goleiro" ? "linha" : "goleiro"), "Posição alterada.")}>
+                        {p.categoria === "goleiro" ? "MOVER PARA LINHA" : "MOVER PARA GOL"}
                       </button>
                       <button
                         className="mini danger"

@@ -10,6 +10,8 @@ create table if not exists public.despesa_parcelas (
 );
 alter table public.despesas enable row level security;
 alter table public.despesa_parcelas enable row level security;
+drop policy if exists despesas_admin on public.despesas;
+drop policy if exists despesa_parcelas_admin on public.despesa_parcelas;
 create policy despesas_admin on public.despesas for all to authenticated using(public.is_admin()) with check(public.is_admin());
 create policy despesa_parcelas_admin on public.despesa_parcelas for all to authenticated using(public.is_admin()) with check(public.is_admin());
 grant select,insert,update,delete on public.despesas,public.despesa_parcelas to authenticated;
