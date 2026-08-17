@@ -2,9 +2,17 @@ export type Role = "user" | "admin" | "superadmin";
 export type PlayerType = "mensalista" | "avulso";
 export type ListPosition = "linha" | "goleiro";
 export type ListPhase =
-  "fechada" | "mensalistas" | "geral" | "encerrada" | "cancelada";
+  | "fechada"
+  | "mensalistas"
+  | "geral"
+  | "encerrada"
+  | "cancelada";
 export type PeladaStatus =
-  "aberta" | "lotada" | "acontecendo" | "encerrada" | "cancelada";
+  | "aberta"
+  | "lotada"
+  | "acontecendo"
+  | "encerrada"
+  | "cancelada";
 export type ParticipantStatus =
   | "aguardando_resposta"
   | "confirmado"
@@ -38,6 +46,7 @@ export interface Player {
   posicao: ListPosition;
   ativo: boolean;
   isento_mensalidade?: boolean;
+  nota_equilibrio?: number;
   profile?: Profile | null;
 }
 export interface Pelada {
@@ -51,6 +60,14 @@ export interface Pelada {
   fase_lista: ListPhase;
   lista_automatica: boolean;
   motivo_cancelamento?: string | null;
+  sorteio_liberado?: boolean;
+}
+export interface TeamMember {
+  pelada_id: string;
+  jogador_id: string;
+  time: number;
+  ordem: number;
+  player?: Player;
 }
 export interface PeladaSeries {
   id: string;

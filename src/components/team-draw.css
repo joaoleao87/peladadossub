@@ -1,0 +1,134 @@
+.draw-panel {
+  margin-top: 22px;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid #30332b;
+  border-radius: 14px;
+}
+.draw-panel > header {
+  position: static;
+  height: auto;
+  display: flex;
+  padding: 0 0 14px;
+  background: none;
+  border: 0;
+}
+.draw-panel > header small,
+.draw-panel > header em {
+  color: var(--yellow);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.ratings-panel {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #10120f;
+  border: 1px solid #30332b;
+  border-radius: 9px;
+}
+.ratings-panel summary {
+  color: var(--yellow);
+  font-weight: 800;
+  cursor: pointer;
+}
+.ratings-panel > p {
+  color: var(--muted);
+  font-size: 10px;
+}
+.rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid #292c26;
+}
+.rating-row > span {
+  display: flex;
+  gap: 3px;
+}
+.rating-row button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  background: #292c25;
+  color: #aaa;
+  font-size: 11px;
+}
+.rating-row button.active {
+  background: var(--yellow);
+  color: #111;
+}
+.draw-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.team-card {
+  padding: 12px;
+  background: #10120f;
+  border: 1px solid #30332b;
+  border-radius: 9px;
+}
+.team-card h3 {
+  margin: 0 0 8px;
+  color: var(--yellow);
+  font: 800 18px "Barlow Condensed";
+  text-transform: uppercase;
+}
+.team-card ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 22px;
+}
+.team-card li {
+  font-size: 12px;
+}
+.team-card li small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+}
+.swap-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #30332b;
+}
+.swap-players b {
+  grid-column: 1/-1;
+}
+.swap-players select {
+  min-width: 0;
+  max-width: 100%;
+  height: 42px;
+  padding: 0 9px;
+  background: #0d0f0c;
+  color: #fff;
+  border: 1px solid #41453b;
+}
+.swap-players button {
+  min-height: 42px;
+  padding: 8px 12px;
+}
+@media (max-width: 480px) {
+  .draw-actions,
+  .teams-grid,
+  .swap-players {
+    grid-template-columns: 1fr;
+  }
+  .swap-players b {
+    grid-column: 1;
+  }
+}

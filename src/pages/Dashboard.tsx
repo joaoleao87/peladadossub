@@ -6,6 +6,7 @@ import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
   leavePelada,
+  myPlayer,
   nextPelada,
   participants,
   respondPelada,
@@ -14,8 +15,12 @@ import {
 export function Dashboard() {
   const { profile } = useAuth(),
     state = useLoad(async () => {
-      const game = await nextPelada();
-      return { game, list: game ? await participants(game.id) : [] };
+      const game = await nextPelada(),
+        [list, player] = await Promise.all([
+          game ? participants(game.id) : [],
+          myPlayer(),
+        ]);
+      return { game, list, player };
     }),
     [toast, setToast] = useState(""),
     [busy, setBusy] = useState(false);
@@ -95,8 +100,12 @@ export function Dashboard() {
       setBusy(false);
     }
   }
-  const action =
-    mine?.status === "aguardando_resposta" ? (
+  const action = !state.data?.player ? (
+    <div className="opening-card">
+      <b>Conta aguardando vínculo</b>
+      <span>Você pode acompanhar a lista enquanto um administrador vincula seu jogador.</span>
+    </div>
+  ) : mine?.status === "aguardando_resposta" ? (
       <div className="answer-actions">
         <b>VOCÊ VAI JOGAR?</b>
         <button disabled={busy} onClick={() => answer(true)}>

@@ -1,0 +1,95 @@
+.game-picker {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+  color: #b8bab4;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+}
+.game-picker select,
+.queue-player select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  background: #151713;
+  color: #fff;
+  border: 1px solid #3a3d35;
+}
+.list-admin-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 14px;
+  background: #151713;
+  border: 1px solid #393c34;
+  border-radius: 12px;
+}
+.list-admin-panel > header {
+  position: static;
+  height: auto;
+  display: flex;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.list-admin-panel > header small {
+  margin-left: auto;
+  color: var(--yellow);
+}
+.phase-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  background: #0d0f0c;
+  border-radius: 8px;
+}
+.phase-buttons button {
+  min-height: 36px;
+  padding: 7px 4px;
+  background: transparent;
+  color: #999d93;
+  font-size: 10px;
+}
+.phase-buttons button.active {
+  background: var(--yellow);
+  color: #111;
+}
+.queue-player {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+  min-width: 0;
+}
+.queue-player button {
+  min-height: 44px;
+  padding: 9px 13px;
+}
+.list-admin-panel > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.list-player-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.list-player-actions button {
+  min-width: 30px;
+}
+@media (max-width: 480px) {
+  .admin-player {
+    flex-wrap: wrap;
+  }
+  .list-player-actions {
+    width: 100%;
+    margin-left: 70px;
+  }
+  .queue-player {
+    grid-template-columns: 1fr;
+  }
+}
