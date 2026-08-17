@@ -87,20 +87,37 @@ export function PlayerManager() {
             Nome
             <input name="nome" minLength={2} required />
           </label>
-          <label>
-            Tipo de cobrança
-            <select name="tipo">
-              <option value="avulso">Avulso</option>
-              <option value="mensalista">Mensalista</option>
-            </select>
-          </label>
-          <label>
-            Posição
-            <select name="posicao">
-              <option value="linha">Linha</option>
-              <option value="goleiro">Goleiro</option>
-            </select>
-          </label>
+          <fieldset className="player-choice">
+            <legend>Tipo de cobrança</legend>
+            <div>
+              <label>
+                <input type="radio" name="tipo" value="avulso" defaultChecked />
+                Avulso
+              </label>
+              <label>
+                <input type="radio" name="tipo" value="mensalista" />
+                Mensalista
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="player-choice">
+            <legend>Posição</legend>
+            <div>
+              <label>
+                <input
+                  type="radio"
+                  name="posicao"
+                  value="linha"
+                  defaultChecked
+                />
+                Linha
+              </label>
+              <label>
+                <input type="radio" name="posicao" value="goleiro" />
+                Goleiro
+              </label>
+            </div>
+          </fieldset>
           <label>
             Conta de acesso (opcional)
             <select name="user_id">
@@ -169,68 +186,84 @@ export function PlayerManager() {
                     Login usado para confirmar presença e consultar pagamentos.
                   </small>
                 </label>
-                <label>
-                  Tipo de cobrança
-                  <select
-                    value={player.tipo}
-                    onChange={(e) =>
-                      void update(
-                        player,
-                        {
-                          tipo: e.target.value as PlayerType,
-                        },
-                        "Tipo de cobrança atualizado.",
-                      )
-                    }
-                  >
-                    <option value="mensalista">Mensalista</option>
-                    <option value="avulso">Avulso</option>
-                  </select>
-                </label>
-                <label>
-                  Posição
-                  <select
-                    value={player.posicao}
-                    onChange={(e) =>
-                      void update(
-                        player,
-                        {
-                          posicao: e.target.value as ListPosition,
-                        },
-                        "Posição atualizada.",
-                      )
-                    }
-                  >
-                    <option value="linha">Linha</option>
-                    <option value="goleiro">Goleiro</option>
-                  </select>
-                </label>
+                <fieldset className="player-choice">
+                  <legend>Tipo de cobrança</legend>
+                  <div>
+                    {(["mensalista", "avulso"] as PlayerType[]).map((tipo) => (
+                      <label
+                        className={player.tipo === tipo ? "selected" : ""}
+                        key={tipo}
+                      >
+                        <input
+                          type="radio"
+                          name={`tipo-${player.id}`}
+                          value={tipo}
+                          checked={player.tipo === tipo}
+                          onChange={() =>
+                            void update(
+                              player,
+                              { tipo },
+                              "Tipo de cobrança atualizado.",
+                            )
+                          }
+                        />
+                        {tipo === "mensalista" ? "Mensalista" : "Avulso"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="player-choice">
+                  <legend>Posição</legend>
+                  <div>
+                    {(["linha", "goleiro"] as ListPosition[]).map((posicao) => (
+                      <label
+                        className={player.posicao === posicao ? "selected" : ""}
+                        key={posicao}
+                      >
+                        <input
+                          type="radio"
+                          name={`posicao-${player.id}`}
+                          value={posicao}
+                          checked={player.posicao === posicao}
+                          onChange={() =>
+                            void update(
+                              player,
+                              { posicao },
+                              "Posição atualizada.",
+                            )
+                          }
+                        />
+                        {posicao === "linha" ? "Linha" : "Goleiro"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 {player.tipo === "mensalista" && (
                   <div className="player-exemption">
                     <span>
                       <b>Isenção mensal</b>
                       <small>Isentos não recebem cobranças mensais.</small>
                     </span>
-                    <button
-                      type="button"
-                      className={player.isento_mensalidade ? "active" : ""}
-                      onClick={() =>
-                        run(
-                          () =>
-                            setMonthlyExemption(
-                              player.id,
-                              !player.isento_mensalidade,
-                            ),
-                          player.isento_mensalidade
-                            ? "Isenção removida."
-                            : "Mensalista isento.",
-                        )
-                      }
-                    >
-                      {player.isento_mensalidade
-                        ? "Remover isenção"
-                        : "Marcar como isento"}
-                    </button>
+                    <label className="player-switch">
+                      <input
+                        type="checkbox"
+                        checked={player.isento_mensalidade}
+                        onChange={() =>
+                          run(
+                            () =>
+                              setMonthlyExemption(
+                                player.id,
+                                !player.isento_mensalidade,
+                              ),
+                            player.isento_mensalidade
+                              ? "Isenção removida."
+                              : "Mensalista isento.",
+                          )
+                        }
+                      />
+                      <i aria-hidden="true" />
+                      <b>{player.isento_mensalidade ? "Isento" : "Cobrar"}</b>
+                    </label>
                   </div>
                 )}
                 <footer>
