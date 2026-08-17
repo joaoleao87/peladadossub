@@ -32,7 +32,9 @@ export function Admin() {
       "pelada",
     ),
     [toast, setToast] = useState(""),
-    [importText, setImportText] = useState("");
+    [importText, setImportText] = useState(""),
+    [pendingImport, setPendingImport] = useState<{ nome: string; grupo: string }[] | null>(null),
+    [resolutions, setResolutions] = useState<Record<string, string>>({});
   const state = useLoad(async () => {
     const [summary, players, profiles, series] = await Promise.all([
       adminSummary(),
@@ -166,12 +168,13 @@ export function Admin() {
       feedback("Nenhum nome numerado foi encontrado.");
       return;
     }
-    await run(
-      () => importWhatsAppList(summary.pelada!.id, items),
-      `${items.length} nomes importados.`,
-    );
+    const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+    const unknown=items.filter(item=>!players.some(player=>[player.nome,player.apelido||""].some(name=>normalize(name)===normalize(item.nome))));
+    if(unknown.length){setPendingImport(items);setResolutions({});return;}
+    await run(() => importWhatsAppList(summary.pelada!.id, items), `${items.length} nomes importados.`);
     setImportText("");
   }
+  async function confirmImport(){if(!pendingImport||!summary.pelada)return;const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();try{const resolved=[];for(const item of pendingImport){const existing=players.find(player=>[player.nome,player.apelido||""].some(name=>normalize(name)===normalize(item.nome)));if(existing){resolved.push(item);continue}const choice=resolutions[item.nome];if(!choice)throw new Error(`Escolha o que fazer com ${item.nome}.`);if(choice==="new"){await savePlayer({nome:item.nome,tipo:"avulso",posicao:item.grupo==="goleiro"?"goleiro":"linha"});resolved.push(item)}else{const player=players.find(p=>p.id===choice);if(!player)throw new Error("Jogador selecionado não foi encontrado.");resolved.push({...item,nome:player.apelido||player.nome})}}await importWhatsAppList(summary.pelada.id,resolved);feedback(`${resolved.length} nomes importados.`);setPendingImport(null);setImportText("");await state.reload()}catch(err){feedback(err instanceof Error?err.message:"Não foi possível importar.")}}
   async function addToList(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!summary.pelada) return;
@@ -608,6 +611,7 @@ export function Admin() {
         </>
       )}
       <Toast message={toast} />
+      {pendingImport&&<div style={{position:"fixed",inset:0,zIndex:50,background:"#000b",display:"grid",placeItems:"center",padding:16}}><div className="panel" style={{width:"min(620px,100%)",maxHeight:"85vh",overflow:"auto"}}><h2>Confirmar nomes não encontrados</h2><p>Vincule a um jogador existente ou autorize um novo cadastro.</p>{pendingImport.filter(item=>!players.some(player=>[player.nome,player.apelido||""].some(name=>name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()===item.nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()))).map(item=><label key={item.nome} style={{display:"grid",gap:6,margin:"14px 0"}}><b>{item.nome}</b><select value={resolutions[item.nome]||""} onChange={e=>setResolutions(old=>({...old,[item.nome]:e.target.value}))}><option value="">Escolha…</option><option value="new">Cadastrar como novo jogador</option>{players.map(player=><option value={player.id} key={player.id}>Usar {player.apelido||player.nome}</option>)}</select></label>)}<div className="finance-actions"><button className="secondary" onClick={()=>setPendingImport(null)}>CANCELAR</button><button onClick={confirmImport}>CONFIRMAR E IMPORTAR</button></div></div></div>}
     </section>
   );
 }
