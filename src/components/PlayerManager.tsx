@@ -138,7 +138,7 @@ export function PlayerManager() {
                 </span>
               </summary>
               <section className="player-fields">
-                <label>
+                <label className="player-account">
                   Conta de acesso
                   <select
                     value={player.user_id || ""}
@@ -166,8 +166,7 @@ export function PlayerManager() {
                       ))}
                   </select>
                   <small>
-                    Permite entrar no aplicativo, confirmar presença e ver
-                    pagamentos.
+                    Login usado para confirmar presença e consultar pagamentos.
                   </small>
                 </label>
                 <label>
@@ -185,7 +184,7 @@ export function PlayerManager() {
                     }
                   >
                     <option value="mensalista">Mensalista</option>
-                    <option value="avulso">Avulso por pelada</option>
+                    <option value="avulso">Avulso</option>
                   </select>
                 </label>
                 <label>
@@ -202,16 +201,19 @@ export function PlayerManager() {
                       )
                     }
                   >
-                    <option value="linha">Jogador de linha</option>
+                    <option value="linha">Linha</option>
                     <option value="goleiro">Goleiro</option>
                   </select>
                 </label>
                 {player.tipo === "mensalista" && (
-                  <label>
-                    Isenção mensal
+                  <div className="player-exemption">
+                    <span>
+                      <b>Isenção mensal</b>
+                      <small>Isentos não recebem cobranças mensais.</small>
+                    </span>
                     <button
                       type="button"
-                      className={player.isento_mensalidade ? "secondary" : ""}
+                      className={player.isento_mensalidade ? "active" : ""}
                       onClick={() =>
                         run(
                           () =>
@@ -227,10 +229,9 @@ export function PlayerManager() {
                     >
                       {player.isento_mensalidade
                         ? "Remover isenção"
-                        : "Isentar mensalidade"}
+                        : "Marcar como isento"}
                     </button>
-                    <small>Isentos não recebem cobranças mensais.</small>
-                  </label>
+                  </div>
                 )}
                 <footer>
                   <button

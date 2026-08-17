@@ -47,6 +47,7 @@
 .player-fields label {
   display: grid;
   gap: 6px;
+  min-width: 0;
   color: #b8bab4;
   font-size: 12px;
   font-weight: 600;
@@ -55,8 +56,9 @@
 .player-create select,
 .player-fields select {
   width: 100%;
-  min-height: 46px;
-  padding: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
   background: #0d0f0c;
   color: #fff;
   border: 1px solid #41453b;
@@ -103,27 +105,58 @@
 }
 .player-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 16px 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 18px;
   border-top: 1px solid #30332b;
+}
+.player-account,
+.player-exemption {
+  grid-column: 1/-1;
+}
+.player-exemption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #30332b;
+}
+.player-exemption span {
+  display: grid;
+  gap: 4px;
+}
+.player-exemption b {
+  color: #b8bab4;
+  font-size: 12px;
+}
+.player-exemption button {
+  flex: none;
+  min-height: 34px;
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--yellow);
+  border: 1px solid #5d5a25;
+  font-size: 11px;
+}
+.player-exemption button.active {
+  color: #fff;
+  border-color: #55594e;
 }
 .player-fields footer {
   grid-column: 1/-1;
   border-top: 1px solid #30332b;
-  padding-top: 14px;
+  padding-top: 8px;
 }
-.player-fields footer button {
-  min-height: 38px;
-  padding: 8px 12px;
-}
-.player-fields .danger {
-  background: #6d3030;
-  color: #fff;
+.player-fields footer .danger {
+  min-height: 30px;
+  padding: 4px 0;
+  background: transparent;
+  color: #d47a7a;
+  font-size: 11px;
 }
 @media (max-width: 600px) {
-  .player-create form,
-  .player-fields {
+  .player-create form {
     grid-template-columns: 1fr;
   }
   .players-list summary {
@@ -133,7 +166,18 @@
   .player-tags {
     justify-content: flex-start;
   }
-  .player-fields footer {
+  .player-exemption {
+    align-items: flex-start;
+  }
+}
+@media (max-width: 340px) {
+  .player-fields {
+    grid-template-columns: 1fr;
+  }
+  .player-fields > * {
     grid-column: 1;
+  }
+  .player-exemption {
+    flex-direction: column;
   }
 }
