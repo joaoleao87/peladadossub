@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { ListPhase, ListPosition, Participant, Payment, Pelada, PeladaSeries, Player, PlayerType, Profile, RankingRow, Role } from './database.types'
+import type { Expense, ListPhase, ListPosition, Participant, Payment, Pelada, PeladaSeries, Player, PlayerType, Profile, RankingRow, Role } from './database.types'
 
 export async function nextPelada() { let result=await supabase.from('peladas').select('*').gte('data',new Date().toISOString().slice(0,10)).neq('status','cancelada').order('data').order('horario').limit(1).maybeSingle();if(result.error)throw result.error;if(result.data){const {error}=await supabase.rpc('sincronizar_fase_lista',{p_pelada_id:result.data.id});if(error)throw error;result=await supabase.from('peladas').select('*').eq('id',result.data.id).single()}if(result.error)throw result.error;return result.data as Pelada|null }
 export async function participants(peladaId: string) { const { data, error } = await supabase.from('pelada_participantes').select('*, profile:profiles!user_id(*), player:jogadores!jogador_id(*)').eq('pelada_id', peladaId).neq('status', 'cancelado').order('ordem_entrada'); if (error) throw error; return data as Participant[] }
@@ -38,3 +38,7 @@ export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'p
 export async function peladasHistory(){const {data,error}=await supabase.from('peladas').select('*').neq('status','cancelada').order('data',{ascending:false}).order('horario',{ascending:false}).limit(30);if(error)throw error;return data as Pelada[]}
 export async function createMonthlyInvite(){const {data,error}=await supabase.rpc('criar_convite_mensalista');if(error)throw error;return data as string}
 export async function deletePlayer(id:string){const {error}=await supabase.rpc('excluir_jogador',{p_id:id});if(error)throw error}
+export async function expenses(){const {data,error}=await supabase.from('despesas').select('*,parcelas:despesa_parcelas(*)').order('created_at',{ascending:false});if(error)throw error;return data as Expense[]}
+export async function createExpense(values:{descricao:string;data:string;parcelas:number;valor:number;valorTipo:'total'|'parcela'}){const {error}=await supabase.rpc('criar_despesa',{p_descricao:values.descricao,p_data:values.data,p_parcelas:values.parcelas,p_valor:values.valor,p_valor_tipo:values.valorTipo});if(error)throw error}
+export async function updateExpenseInstallment(id:string,paga:boolean){const {error}=await supabase.rpc('atualizar_parcela_despesa',{p_id:id,p_paga:paga});if(error)throw error}
+export async function deleteExpense(id:string){const {error}=await supabase.rpc('excluir_despesa',{p_id:id});if(error)throw error}
