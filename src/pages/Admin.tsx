@@ -1,40 +1,27 @@
 import { useState, type FormEvent } from "react";
-import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
+import { ErrorState, Spinner, Toast } from "../components/Ui";
 import { GameManager } from "../components/GameManager";
 import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
-  adminAddPlayer,
-  adminParticipantById,
   adminSummary,
   allPlayers,
   allProfiles,
   createMonthlyInvite,
   deletePlayer,
   generateNextPelada,
-  importWhatsAppList,
   savePelada,
   savePlayer,
   saveSeries,
   setMonthlyExemption,
-  setListPhase,
 } from "../lib/api";
-import type {
-  ListPhase,
-  ListPosition,
-  Pelada,
-  PlayerType,
-} from "../lib/database.types";
-import { formatWhatsAppList, parseWhatsAppList } from "../lib/whatsapp";
+import type { ListPosition, Pelada, PlayerType } from "../lib/database.types";
 
 export function Admin() {
   const [tab, setTab] = useState<"pelada" | "jogadores">(
       "pelada",
     ),
-    [toast, setToast] = useState(""),
-    [importText, setImportText] = useState(""),
-    [pendingImport, setPendingImport] = useState<{ nome: string; grupo: string }[] | null>(null),
-    [resolutions, setResolutions] = useState<Record<string, string>>({});
+    [toast, setToast] = useState("");
   const state = useLoad(async () => {
     const [summary, players, profiles, series] = await Promise.all([
       adminSummary(),
@@ -103,12 +90,6 @@ export function Admin() {
       "Pelada salva.",
     );
   }
-  async function pastGameSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form=e.currentTarget,f=new FormData(form);
-    await run(() => savePelada({data:String(f.get("data")),horario:String(f.get("horario")),local:String(f.get("local")),limite_jogadores:20,status:"encerrada",lista_aberta:false,fase_lista:"encerrada"}), "Pelada retroativa criada.");
-    form.reset();
-  }
   async function playerSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget,
@@ -124,62 +105,6 @@ export function Admin() {
       "Jogador cadastrado.",
     );
     form.reset();
-  }
-  function name(p: (typeof summary.list)[number]) {
-    return (
-      p.player?.apelido ||
-      p.player?.nome ||
-      p.profile?.apelido ||
-      p.profile?.nome ||
-      ""
-    );
-  }
-  function copyList() {
-    if (!summary.pelada) return;
-    const active = summary.list.filter((p) =>
-        ["confirmado", "presente"].includes(p.status),
-      ),
-      line = active
-        .filter((p) => p.categoria !== "goleiro")
-        .slice(0, 20)
-        .map(name),
-      keepers = active.filter((p) => p.categoria === "goleiro").map(name),
-      waiting = summary.list.filter((p) => p.status === "espera").map(name),
-      date = new Date(`${summary.pelada.data}T12:00`),
-      when =
-        date.toDateString() === new Date(Date.now() + 86400000).toDateString()
-          ? "amanhã"
-          : date.toLocaleDateString("pt-BR");
-    void navigator.clipboard
-      .writeText(
-        formatWhatsAppList(
-          `Pelada ${when} ${summary.pelada.horario.slice(0, 5)}`,
-          line,
-          waiting,
-          keepers,
-        ),
-      )
-      .then(() => feedback("Lista copiada com as 20 vagas."));
-  }
-  async function importList() {
-    if (!summary.pelada) return;
-    const items = parseWhatsAppList(importText);
-    if (!items.length) {
-      feedback("Nenhum nome numerado foi encontrado.");
-      return;
-    }
-    const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
-    const unknown=items.filter(item=>!players.some(player=>[player.nome,player.apelido||""].some(name=>normalize(name)===normalize(item.nome))));
-    if(unknown.length){setPendingImport(items);setResolutions({});return;}
-    await run(() => importWhatsAppList(summary.pelada!.id, items), `${items.length} nomes importados.`);
-    setImportText("");
-  }
-  async function confirmImport(){if(!pendingImport||!summary.pelada)return;const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();try{const resolved=[];for(const item of pendingImport){const existing=players.find(player=>[player.nome,player.apelido||""].some(name=>normalize(name)===normalize(item.nome)));if(existing){resolved.push(item);continue}const choice=resolutions[item.nome];if(!choice)throw new Error(`Escolha o que fazer com ${item.nome}.`);if(choice==="new"){await savePlayer({nome:item.nome,tipo:"avulso",posicao:item.grupo==="goleiro"?"goleiro":"linha"});resolved.push(item)}else{const player=players.find(p=>p.id===choice);if(!player)throw new Error("Jogador selecionado não foi encontrado.");resolved.push({...item,nome:player.apelido||player.nome})}}await importWhatsAppList(summary.pelada.id,resolved);feedback(`${resolved.length} nomes importados.`);setPendingImport(null);setImportText("");await state.reload()}catch(err){feedback(err instanceof Error?err.message:"Não foi possível importar.")}}
-  async function addToList(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!summary.pelada) return;
-    const jogadorId = String(new FormData(e.currentTarget).get("jogador_id"));
-    if (jogadorId) await run(() => adminAddPlayer(summary.pelada!.id, jogadorId), "Jogador adicionado.");
   }
   async function copyInvite() {
     try {
@@ -347,129 +272,7 @@ export function Admin() {
             </label>
             <button className="wide">SALVAR OCORRÊNCIA</button>
           </form>
-          <form className="panel form-grid" onSubmit={pastGameSubmit}>
-            <h2>Cadastrar pelada passada</h2>
-            <label>Data<input type="date" name="data" required/></label>
-            <label>Horário<input type="time" name="horario" defaultValue="20:30" required/></label>
-            <label className="wide">Local<input name="local" defaultValue={series?.local??"Municipal"} required/></label>
-            <button className="wide">CRIAR PELADA RETROATIVA</button>
-            <small className="wide">Depois, use Avulsos no Financeiro para selecionar esta pelada e gerar as cobranças.</small>
-          </form>
           <GameManager />
-          {summary.pelada && (
-            <div className="panel">
-              <h2>Lista: {summary.pelada.fase_lista}</h2>
-              <div className="phase-actions">
-                {(
-                  [
-                    ["mensalistas", "ABRIR MENSALISTAS"],
-                    ["geral", "ABRIR GERAL"],
-                    ["fechada", "FECHAR"],
-                  ] as [ListPhase, string][]
-                ).map(([phase, label]) => (
-                  <button
-                    className="mini"
-                    key={phase}
-                    onClick={() =>
-                      run(
-                        () => setListPhase(summary.pelada!.id, phase),
-                        `Lista: ${phase}.`,
-                      )
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-                <button className="mini" onClick={copyList}>
-                  COPIAR WHATSAPP
-                </button>
-              </div>
-              <form className="whatsapp-import" onSubmit={addToList}>
-                <label>
-                  Adicionar jogador à lista
-                  <select name="jogador_id" required defaultValue="">
-                    <option value="" disabled>Selecione…</option>
-                    {players.filter(player => !summary.list.some(item => item.jogador_id === player.id && item.status !== "cancelado")).map(player => <option key={player.id} value={player.id}>{player.apelido || player.nome}</option>)}
-                  </select>
-                </label>
-                <button>ADICIONAR MEMBRO</button>
-              </form>
-              <div className="whatsapp-import">
-                <label>
-                  Importar lista do WhatsApp
-                  <textarea
-                    value={importText}
-                    onChange={(e) => setImportText(e.target.value)}
-                    placeholder={
-                      "1- Vinicius\n2- Guilherme\n\nSuplentes\n1- João\n\nGoleiros\n1- Ale"
-                    }
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={importList}
-                >
-                  IMPORTAR NOMES
-                </button>
-              </div>
-              {summary.list.length ? (
-                summary.list.map((p) => (
-                  <div className="admin-row" key={p.id}>
-                    <span>
-                      <b>{name(p)}</b>
-                      <small>
-                        {p.categoria} • {p.status}
-                        {!p.user_id ? " • sem conta" : ""}
-                      </small>
-                    </span>
-                    <div>
-                      {p.status === "espera" && (
-                        <button
-                          className="mini"
-                          onClick={() =>
-                            run(
-                              () => adminParticipantById(p.id, "promote"),
-                              "Promovido.",
-                            )
-                          }
-                        >
-                          Promover
-                        </button>
-                      )}
-                      <button
-                        className="mini"
-                        onClick={() =>
-                          run(
-                            () => adminParticipantById(p.id, "presente"),
-                            "Presença marcada.",
-                          )
-                        }
-                      >
-                        Presente
-                      </button>
-                      <button className="mini secondary" onClick={() => run(() => adminParticipantById(p.id, p.categoria === "goleiro" ? "linha" : "goleiro"), "Posição alterada.")}>
-                        {p.categoria === "goleiro" ? "MOVER PARA LINHA" : "MOVER PARA GOL"}
-                      </button>
-                      <button
-                        className="mini danger"
-                        onClick={() =>
-                          run(
-                            () => adminParticipantById(p.id, "remove"),
-                            "Removido.",
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <Empty title="Lista vazia" />
-              )}
-            </div>
-          )}
         </>
       )}
       {tab === "jogadores" && (
@@ -611,7 +414,6 @@ export function Admin() {
         </>
       )}
       <Toast message={toast} />
-      {pendingImport&&<div style={{position:"fixed",inset:0,zIndex:50,background:"#000b",display:"grid",placeItems:"center",padding:16}}><div className="panel" style={{width:"min(620px,100%)",maxHeight:"85vh",overflow:"auto"}}><h2>Confirmar nomes não encontrados</h2><p>Vincule a um jogador existente ou autorize um novo cadastro.</p>{pendingImport.filter(item=>!players.some(player=>[player.nome,player.apelido||""].some(name=>name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()===item.nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()))).map(item=><label key={item.nome} style={{display:"grid",gap:6,margin:"14px 0"}}><b>{item.nome}</b><select value={resolutions[item.nome]||""} onChange={e=>setResolutions(old=>({...old,[item.nome]:e.target.value}))}><option value="">Escolha…</option><option value="new">Cadastrar como novo jogador</option>{players.map(player=><option value={player.id} key={player.id}>Usar {player.apelido||player.nome}</option>)}</select></label>)}<div className="finance-actions"><button className="secondary" onClick={()=>setPendingImport(null)}>CANCELAR</button><button onClick={confirmImport}>CONFIRMAR E IMPORTAR</button></div></div></div>}
     </section>
   );
 }
