@@ -55,10 +55,14 @@
 .player-create input:not([type="radio"]),
 .player-create select,
 .player-fields select {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  height: 44px;
   min-height: 44px;
-  padding: 9px 12px;
+  padding: 0 12px;
   background: #0d0f0c;
   color: #fff;
   border: 1px solid #41453b;
@@ -146,6 +150,9 @@
 .player-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   gap: 12px;
   padding: 14px 18px;
   border-top: 1px solid #30332b;
@@ -153,6 +160,11 @@
 .player-account,
 .player-exemption {
   grid-column: 1/-1;
+}
+.player-account {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 .player-exemption {
   display: flex;
