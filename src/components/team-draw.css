@@ -21,46 +21,6 @@
   font-weight: 800;
   letter-spacing: 1px;
 }
-.ratings-panel {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: #10120f;
-  border: 1px solid #30332b;
-  border-radius: 9px;
-}
-.ratings-panel summary {
-  color: var(--yellow);
-  font-weight: 800;
-  cursor: pointer;
-}
-.ratings-panel > p {
-  color: var(--muted);
-  font-size: 10px;
-}
-.rating-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 0;
-  border-top: 1px solid #292c26;
-}
-.rating-row > span {
-  display: flex;
-  gap: 3px;
-}
-.rating-row button {
-  width: 30px;
-  min-height: 30px;
-  padding: 0;
-  background: #292c25;
-  color: #aaa;
-  font-size: 11px;
-}
-.rating-row button.active {
-  background: var(--yellow);
-  color: #111;
-}
 .draw-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

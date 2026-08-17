@@ -3,22 +3,20 @@ import {
   drawTeams,
   generateTeamDraw,
   publishTeamDraw,
-  ratePlayer,
   swapTeamPlayers,
 } from "../lib/api";
-import type { Participant, Pelada } from "../lib/database.types";
+import type { Pelada } from "../lib/database.types";
 import { Empty, ErrorState, Spinner, Toast } from "./Ui";
 import { useLoad } from "../hooks/useLoad";
 import "./team-draw.css";
 
 interface Props {
   game: Pelada;
-  participants: Participant[];
   isAdmin: boolean;
   onChanged: () => Promise<void>;
 }
 
-export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
+export function TeamDraw({ game, isAdmin, onChanged }: Props) {
   const state = useLoad(() => drawTeams(game.id), game.id),
     [toast, setToast] = useState(""),
     [first, setFirst] = useState(""),
@@ -28,11 +26,6 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const members = state.data ?? [],
-    line = participants.filter(
-      (item) =>
-        item.categoria === "linha" &&
-        ["confirmado", "presente"].includes(item.status),
-    ),
     teamCount = members.reduce((max, item) => Math.max(max, item.time), 0);
   async function run(
     action: () => Promise<unknown>,
@@ -52,8 +45,6 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
       setTimeout(() => setToast(""), 3500);
     }
   }
-  const name = (item: Participant) =>
-    item.player?.apelido || item.player?.nome || "Jogador";
   return (
     <section className="draw-panel">
       <header>
@@ -64,39 +55,7 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
         {isAdmin && <em>{game.sorteio_liberado ? "Liberado" : "Rascunho"}</em>}
       </header>
       {isAdmin && (
-        <>
-          <details className="ratings-panel">
-            <summary>Notas dos jogadores</summary>
-            <p>Use notas de 1 a 5. Goleiros não entram no sorteio.</p>
-            {line.map((item) => (
-              <div className="rating-row" key={item.id}>
-                <b>{name(item)}</b>
-                <span aria-label={`Nota de ${name(item)}`}>
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      type="button"
-                      className={
-                        (item.player?.nota_equilibrio ?? 3) === rating
-                          ? "active"
-                          : ""
-                      }
-                      onClick={() =>
-                        void run(
-                          () => ratePlayer(item.jogador_id, rating),
-                          "Nota atualizada.",
-                          true,
-                        )
-                      }
-                      key={rating}
-                    >
-                      {rating}
-                    </button>
-                  ))}
-                </span>
-              </div>
-            ))}
-          </details>
-          <div className="draw-actions">
+        <div className="draw-actions">
             <button
               type="button"
               onClick={() =>
@@ -127,8 +86,7 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
                 ? "Ocultar dos jogadores"
                 : "Liberar para jogadores"}
             </button>
-          </div>
-        </>
+        </div>
       )}
       {members.length ? (
         <>

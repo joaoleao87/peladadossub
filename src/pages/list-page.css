@@ -75,21 +75,45 @@
 }
 .list-player-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   margin-left: auto;
 }
 .list-player-actions button {
   min-width: 30px;
 }
+.list-player-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.list-player-rating small {
+  margin-right: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.list-player-rating button.active {
+  background: var(--yellow);
+  color: #111;
+  border-color: var(--yellow);
+}
 @media (max-width: 480px) {
   .admin-player {
     flex-wrap: wrap;
   }
   .list-player-actions {
-    width: 100%;
+    width: calc(100% - 70px);
     margin-left: 70px;
   }
   .queue-player {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 360px) {
+  .list-player-actions {
+    width: 100%;
+    margin-left: 0;
   }
 }

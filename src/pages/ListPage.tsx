@@ -9,6 +9,7 @@ import {
   allPlayers,
   participants,
   peladasHistory,
+  ratePlayer,
   setListPhase,
 } from "../lib/api";
 import type { Participant } from "../lib/database.types";
@@ -123,34 +124,36 @@ export function ListPage() {
                   className="list-player-actions"
                   aria-label={`Ações para ${name}`}
                 >
-                  <button
-                    type="button"
-                    className="mini secondary"
-                    disabled={index === 0}
-                    aria-label={`Subir ${name}`}
-                    onClick={() =>
-                      void run(
-                        () => adminParticipantById(item.id, "up"),
-                        "Ordem atualizada.",
-                      )
-                    }
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="mini secondary"
-                    disabled={index === items.length - 1}
-                    aria-label={`Descer ${name}`}
-                    onClick={() =>
-                      void run(
-                        () => adminParticipantById(item.id, "down"),
-                        "Ordem atualizada.",
-                      )
-                    }
-                  >
-                    ↓
-                  </button>
+                  {item.categoria === "linha" && (
+                    <span
+                      className="list-player-rating"
+                      aria-label={`Nota de ${name}`}
+                    >
+                      <small>Nota</small>
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          type="button"
+                          className={`mini ${
+                            (item.player?.nota_equilibrio ?? 3) === rating
+                              ? "active"
+                              : "secondary"
+                          }`}
+                          aria-pressed={
+                            (item.player?.nota_equilibrio ?? 3) === rating
+                          }
+                          onClick={() =>
+                            void run(
+                              () => ratePlayer(item.jogador_id, rating),
+                              "Nota atualizada.",
+                            )
+                          }
+                          key={rating}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </span>
+                  )}
                   {item.status === "espera" ? (
                     <button
                       type="button"
@@ -288,7 +291,6 @@ export function ListPage() {
       {isAdmin && pending.length > 0 && group("Aguardando resposta", pending)}
       <TeamDraw
         game={game}
-        participants={list}
         isAdmin={Boolean(isAdmin)}
         onChanged={state.reload}
       />
