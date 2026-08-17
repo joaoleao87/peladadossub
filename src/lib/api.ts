@@ -26,6 +26,7 @@ export async function saveSeries(values:Omit<PeladaSeries,'id'> & {id?:string}) 
 export async function generateNextPelada(id:string){const {error}=await supabase.rpc('gerar_proxima_pelada',{p_serie_id:id});if(error)throw error}
 export async function saveFinanceConfig(id:string,values:{valor_mensalista:number;valor_avulso:number;dia_vencimento:number;chave_pix:string}){const {error}=await supabase.from('pelada_series').update(values).eq('id',id);if(error)throw error}
 export async function generateMonthlyCharges(seriesId:string,competencia:string){const {data,error}=await supabase.rpc('gerar_mensalidades',{p_serie_id:seriesId,p_competencia:competencia});if(error)throw error;return data as number}
+export async function settleMonthlyCharges(competencia:string){const {data,error}=await supabase.rpc('quitar_mensalidades_mes',{p_competencia:competencia});if(error)throw error;return data as number}
 export async function generateCasualCharges(peladaId:string,seriesId:string){const {data,error}=await supabase.rpc('gerar_cobrancas_avulsas',{p_pelada_id:peladaId,p_serie_id:seriesId});if(error)throw error;return data as number}
 export async function updatePayment(id:string,status:Payment['status'],metodo:Payment['metodo_pagamento']=null){const {error}=await supabase.rpc('atualizar_pagamento',{p_pagamento_id:id,p_status:status,p_metodo:metodo});if(error)throw error}
 export async function refreshLatePayments(){const {error}=await supabase.rpc('atualizar_atrasados');if(error)throw error}
@@ -44,3 +45,4 @@ export async function expenses(){const {data,error}=await supabase.from('despesa
 export async function createExpense(values:{descricao:string;data:string;parcelas:number;valor:number;valorTipo:'total'|'parcela'}){const {error}=await supabase.rpc('criar_despesa',{p_descricao:values.descricao,p_data:values.data,p_parcelas:values.parcelas,p_valor:values.valor,p_valor_tipo:values.valorTipo});if(error)throw error}
 export async function updateExpenseInstallment(id:string,paga:boolean){const {error}=await supabase.rpc('atualizar_parcela_despesa',{p_id:id,p_paga:paga});if(error)throw error}
 export async function deleteExpense(id:string){const {error}=await supabase.rpc('excluir_despesa',{p_id:id});if(error)throw error}
+export async function setMonthlyExemption(id:string,isento:boolean){const {error}=await supabase.rpc('definir_isencao_mensalista',{p_jogador_id:id,p_isento:isento});if(error)throw error}

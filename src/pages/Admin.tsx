@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
+import { GameManager } from "../components/GameManager";
 import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
@@ -15,6 +16,7 @@ import {
   savePelada,
   savePlayer,
   saveSeries,
+  setMonthlyExemption,
   setListPhase,
 } from "../lib/api";
 import type {
@@ -25,14 +27,8 @@ import type {
 } from "../lib/database.types";
 import { formatWhatsAppList, parseWhatsAppList } from "../lib/whatsapp";
 
-const FinancePanel = lazy(() =>
-  import("../components/FinancePanel").then((module) => ({
-    default: module.FinancePanel,
-  })),
-);
-
 export function Admin() {
-  const [tab, setTab] = useState<"pelada" | "jogadores" | "financeiro">(
+  const [tab, setTab] = useState<"pelada" | "jogadores">(
       "pelada",
     ),
     [toast, setToast] = useState(""),
@@ -104,6 +100,12 @@ export function Admin() {
         }),
       "Pelada salva.",
     );
+  }
+  async function pastGameSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form=e.currentTarget,f=new FormData(form);
+    await run(() => savePelada({data:String(f.get("data")),horario:String(f.get("horario")),local:String(f.get("local")),limite_jogadores:20,status:"encerrada",lista_aberta:false,fase_lista:"encerrada"}), "Pelada retroativa criada.");
+    form.reset();
   }
   async function playerSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -236,7 +238,7 @@ export function Admin() {
         </div>
       </div>
       <div className="tabs">
-        {(["pelada", "jogadores", "financeiro"] as const).map((x) => (
+        {(["pelada", "jogadores"] as const).map((x) => (
           <button
             type="button"
             className={tab === x ? "active" : ""}
@@ -342,6 +344,15 @@ export function Admin() {
             </label>
             <button className="wide">SALVAR OCORRÊNCIA</button>
           </form>
+          <form className="panel form-grid" onSubmit={pastGameSubmit}>
+            <h2>Cadastrar pelada passada</h2>
+            <label>Data<input type="date" name="data" required/></label>
+            <label>Horário<input type="time" name="horario" defaultValue="20:30" required/></label>
+            <label className="wide">Local<input name="local" defaultValue={series?.local??"Municipal"} required/></label>
+            <button className="wide">CRIAR PELADA RETROATIVA</button>
+            <small className="wide">Depois, use Avulsos no Financeiro para selecionar esta pelada e gerar as cobranças.</small>
+          </form>
+          <GameManager />
           {summary.pelada && (
             <div className="panel">
               <h2>Lista: {summary.pelada.fase_lista}</h2>
@@ -495,6 +506,7 @@ export function Admin() {
                     </option>
                   ))}
               </select>
+              <small>Escolha uma conta existente para que o jogador acesse pagamentos e confirme presença.</small>
             </label>
             <button className="wide">CADASTRAR JOGADOR</button>
           </form>
@@ -563,6 +575,7 @@ export function Admin() {
                   >
                     Mensalista/Avulso
                   </button>
+                  {p.tipo === "mensalista" && <button className={`mini ${p.isento_mensalidade?"secondary":""}`} onClick={() => run(() => setMonthlyExemption(p.id,!p.isento_mensalidade),p.isento_mensalidade?"Isenção removida.":"Mensalista isento.")}>{p.isento_mensalidade?"REMOVER ISENÇÃO":"ISENTAR"}</button>}
                   <button
                     className="mini"
                     onClick={() =>
@@ -593,11 +606,6 @@ export function Admin() {
             ))}
           </div>
         </>
-      )}
-      {tab === "financeiro" && (
-        <Suspense fallback={<Spinner />}>
-          <FinancePanel />
-        </Suspense>
       )}
       <Toast message={toast} />
     </section>

@@ -37,6 +37,7 @@ export interface Player {
   tipo: PlayerType;
   posicao: ListPosition;
   ativo: boolean;
+  isento_mensalidade?: boolean;
   profile?: Profile | null;
 }
 export interface Pelada {
