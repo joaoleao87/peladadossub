@@ -7,7 +7,6 @@ import {
   activeSeries,
   adminSummary,
   allPlayers,
-  createMonthlyInvite,
   generateNextPelada,
   savePelada,
   saveSeries,
@@ -84,22 +83,6 @@ export function Admin() {
       "Pelada salva.",
     );
   }
-  async function copyInvite() {
-    try {
-      const token = await createMonthlyInvite(),
-        url = `${location.origin}/cadastro-mensalista?token=${token}`;
-      await navigator.clipboard.writeText(url);
-      feedback(
-        "Link de mensalista copiado. Válido por 7 dias e para um cadastro.",
-      );
-    } catch (err) {
-      feedback(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível criar o convite.",
-      );
-    }
-  }
   return (
     <section>
       <p className="eyebrow">DIRETORIA</p>
@@ -146,15 +129,6 @@ export function Admin() {
           </button>
         ))}
       </div>
-      {tab === "jogadores" && (
-        <button
-          type="button"
-          className="full invite-button"
-          onClick={copyInvite}
-        >
-          COPIAR LINK PARA NOVO MENSALISTA
-        </button>
-      )}
       {tab === "pelada" && (
         <>
           <form className="panel form-grid" onSubmit={recurrenceSubmit}>
