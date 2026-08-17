@@ -291,6 +291,7 @@ export function ListPage() {
       {isAdmin && pending.length > 0 && group("Aguardando resposta", pending)}
       <TeamDraw
         game={game}
+        participants={list}
         isAdmin={Boolean(isAdmin)}
         onChanged={state.reload}
       />

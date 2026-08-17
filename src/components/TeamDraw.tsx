@@ -1,32 +1,41 @@
 import { useState } from "react";
 import {
+  addTeamPlayer,
   drawTeams,
   generateTeamDraw,
   publishTeamDraw,
-  swapTeamPlayers,
+  removeTeamPlayer,
 } from "../lib/api";
-import type { Pelada } from "../lib/database.types";
+import type { Participant, Pelada } from "../lib/database.types";
+import { Shield } from "./Icons";
 import { Empty, ErrorState, Spinner, Toast } from "./Ui";
 import { useLoad } from "../hooks/useLoad";
 import "./team-draw.css";
 
 interface Props {
   game: Pelada;
+  participants: Participant[];
   isAdmin: boolean;
   onChanged: () => Promise<void>;
 }
 
-export function TeamDraw({ game, isAdmin, onChanged }: Props) {
+export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
   const state = useLoad(() => drawTeams(game.id), game.id),
-    [toast, setToast] = useState(""),
-    [first, setFirst] = useState(""),
-    [second, setSecond] = useState("");
+    [toast, setToast] = useState("");
   if (!isAdmin && !game.sorteio_liberado) return null;
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const members = state.data ?? [],
-    teamCount = members.reduce((max, item) => Math.max(max, item.time), 0);
+    eligible = participants.filter(
+      (item) =>
+        item.categoria === "linha" &&
+        ["confirmado", "presente"].includes(item.status),
+    ),
+    unassigned = eligible.filter(
+      (item) => !members.some((member) => member.jogador_id === item.jogador_id),
+    ),
+    teamCount = Math.ceil(eligible.length / 4);
   async function run(
     action: () => Promise<unknown>,
     message: string,
@@ -88,24 +97,57 @@ export function TeamDraw({ game, isAdmin, onChanged }: Props) {
             </button>
         </div>
       )}
-      {members.length ? (
+      {eligible.length ? (
         <>
           <div className="teams-grid">
             {Array.from({ length: teamCount }, (_, index) => index + 1).map(
               (team) => (
                 <section className="team-card" key={team}>
-                  <h3>Time {team}</h3>
+                  <div className="team-card-title">
+                    <i>
+                      <Shield />
+                    </i>
+                    <h3>Time {team}</h3>
+                    <small>
+                      {members.filter((member) => member.time === team).length}/4
+                    </small>
+                  </div>
                   <ol>
                     {members
                       .filter((member) => member.time === team)
                       .map((member) => (
                         <li key={member.jogador_id}>
-                          {member.player?.apelido || member.player?.nome}
-                          {isAdmin && (
-                            <small>
-                              Nota {member.player?.nota_equilibrio ?? 3}
-                            </small>
-                          )}
+                          <div className="team-player">
+                            <span>
+                              <b>
+                                {member.player?.apelido || member.player?.nome}
+                              </b>
+                              {isAdmin && (
+                                <small>
+                                  Nota {member.player?.nota_equilibrio ?? 3}
+                                </small>
+                              )}
+                            </span>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="mini danger"
+                                onClick={() =>
+                                  void run(
+                                    () =>
+                                      removeTeamPlayer(
+                                        game.id,
+                                        member.jogador_id,
+                                      ),
+                                    "Jogador removido do time.",
+                                    true,
+                                  )
+                                }
+                              >
+                                Remover
+                              </button>
+                            )}
+                          </div>
                         </li>
                       ))}
                   </ol>
@@ -113,47 +155,45 @@ export function TeamDraw({ game, isAdmin, onChanged }: Props) {
               ),
             )}
           </div>
-          {isAdmin && members.length > 1 && (
-            <form
-              className="swap-players"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (first && second && first !== second)
-                  void run(
-                    () => swapTeamPlayers(game.id, first, second),
-                    "Jogadores trocados.",
-                  );
-              }}
-            >
-              <b>Editar sorteio</b>
-              <select
-                value={first}
-                onChange={(e) => setFirst(e.target.value)}
-                required
-              >
-                <option value="">Primeiro jogador…</option>
-                {members.map((member) => (
-                  <option value={member.jogador_id} key={member.jogador_id}>
-                    {member.player?.apelido || member.player?.nome}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={second}
-                onChange={(e) => setSecond(e.target.value)}
-                required
-              >
-                <option value="">Trocar com…</option>
-                {members
-                  .filter((member) => member.jogador_id !== first)
-                  .map((member) => (
-                    <option value={member.jogador_id} key={member.jogador_id}>
-                      {member.player?.apelido || member.player?.nome}
-                    </option>
-                  ))}
-              </select>
-              <button>Trocar</button>
-            </form>
+          {isAdmin && unassigned.length > 0 && (
+            <section className="team-bench">
+              <h3>Fora dos times</h3>
+              <p>Adicione cada jogador ao time desejado.</p>
+              {unassigned.map((item) => (
+                <div className="team-bench-player" key={item.jogador_id}>
+                  <span>
+                    <b>{item.player?.apelido || item.player?.nome}</b>
+                    <small>Nota {item.player?.nota_equilibrio ?? 3}</small>
+                  </span>
+                  <div>
+                    {Array.from(
+                      { length: teamCount },
+                      (_, index) => index + 1,
+                    ).map((team) => (
+                      <button
+                        type="button"
+                        className="mini secondary"
+                        disabled={
+                          members.filter((member) => member.time === team)
+                            .length >= 4
+                        }
+                        onClick={() =>
+                          void run(
+                            () =>
+                              addTeamPlayer(game.id, item.jogador_id, team),
+                            `Jogador adicionado ao Time ${team}.`,
+                            true,
+                          )
+                        }
+                        key={team}
+                      >
+                        Time {team}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
           )}
         </>
       ) : isAdmin ? (

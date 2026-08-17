@@ -38,11 +38,35 @@
   border: 1px solid #30332b;
   border-radius: 9px;
 }
-.team-card h3 {
-  margin: 0 0 8px;
+.team-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.team-card-title i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #111;
+  background: var(--yellow);
+  border-radius: 50%;
+}
+.team-card-title svg {
+  width: 18px;
+  height: 18px;
+}
+.team-card-title h3 {
+  margin: 0;
   color: var(--yellow);
   font: 800 18px "Barlow Condensed";
   text-transform: uppercase;
+}
+.team-card-title > small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
 }
 .team-card ol {
   display: grid;
@@ -50,45 +74,73 @@
   margin: 0;
   padding-left: 22px;
 }
-.team-card li {
+.team-player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
   font-size: 12px;
 }
-.team-card li small {
+.team-player > span {
+  min-width: 0;
+}
+.team-player b {
+  overflow-wrap: anywhere;
+}
+.team-player small,
+.team-bench-player small {
   display: block;
   color: var(--muted);
   font-size: 9px;
 }
-.swap-players {
+.team-player button {
+  flex: none;
+}
+.team-bench {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
   gap: 8px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid #30332b;
 }
-.swap-players b {
-  grid-column: 1/-1;
+.team-bench > h3 {
+  margin: 0;
+  color: var(--yellow);
+  font: 800 18px "Barlow Condensed";
+  text-transform: uppercase;
 }
-.swap-players select {
-  min-width: 0;
-  max-width: 100%;
-  height: 42px;
-  padding: 0 9px;
-  background: #0d0f0c;
-  color: #fff;
-  border: 1px solid #41453b;
+.team-bench > p {
+  margin: -4px 0 4px;
+  color: var(--muted);
+  font-size: 10px;
 }
-.swap-players button {
-  min-height: 42px;
-  padding: 8px 12px;
+.team-bench-player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  background: #10120f;
+  border: 1px solid #30332b;
+  border-radius: 8px;
+}
+.team-bench-player > div {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 @media (max-width: 480px) {
   .draw-actions,
-  .teams-grid,
-  .swap-players {
+  .teams-grid {
     grid-template-columns: 1fr;
   }
-  .swap-players b {
-    grid-column: 1;
+  .team-bench-player {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .team-bench-player > div {
+    justify-content: flex-start;
   }
 }

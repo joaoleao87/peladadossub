@@ -41,7 +41,8 @@ export async function adminAddPlayer(peladaId:string,jogadorId:string){const {er
 export async function ratePlayer(id:string,nota:number){const {error}=await supabase.rpc('admin_avaliar_jogador',{p_jogador_id:id,p_nota:nota});if(error)throw error}
 export async function drawTeams(peladaId:string){const {data,error}=await supabase.from('pelada_times').select('*,player:jogadores!jogador_id(*)').eq('pelada_id',peladaId).order('time').order('ordem');if(error)throw error;return data as TeamMember[]}
 export async function generateTeamDraw(peladaId:string){const {error}=await supabase.rpc('gerar_sorteio_times',{p_pelada_id:peladaId});if(error)throw error}
-export async function swapTeamPlayers(peladaId:string,first:string,second:string){const {error}=await supabase.rpc('trocar_jogadores_sorteio',{p_pelada_id:peladaId,p_primeiro:first,p_segundo:second});if(error)throw error}
+export async function removeTeamPlayer(peladaId:string,playerId:string){const {error}=await supabase.rpc('remover_jogador_sorteio',{p_pelada_id:peladaId,p_jogador_id:playerId});if(error)throw error}
+export async function addTeamPlayer(peladaId:string,playerId:string,team:number){const {error}=await supabase.rpc('adicionar_jogador_sorteio',{p_pelada_id:peladaId,p_jogador_id:playerId,p_time:team});if(error)throw error}
 export async function publishTeamDraw(peladaId:string,published:boolean){const {error}=await supabase.rpc('publicar_sorteio_times',{p_pelada_id:peladaId,p_liberado:published});if(error)throw error}
 export async function payments() { const { data, error } = await supabase.from('pagamentos').select('*, profile:profiles!user_id(*), player:jogadores!jogador_id(*)').order('created_at', { ascending: false }); if (error) throw error; return data as Payment[] }
 export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'profile'>) { const { error } = await supabase.from('pagamentos').insert(values); if (error) throw error }
