@@ -1,0 +1,102 @@
+.users-panel {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid #2e302a;
+  border-radius: 14px;
+}
+.users-panel h2 {
+  margin-bottom: 6px;
+}
+.user-card {
+  background: #10120f;
+  border: 1px solid #30332b;
+  border-radius: 10px;
+}
+.user-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  cursor: pointer;
+}
+.user-card summary > span:first-child {
+  display: grid;
+  gap: 5px;
+}
+.user-card summary small,
+.user-editor small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.user-editor {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-top: 1px solid #30332b;
+}
+.user-editor fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.user-editor legend,
+.user-player-link {
+  color: #b8bab4;
+  font-size: 12px;
+  font-weight: 600;
+}
+.role-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin-top: 7px;
+  padding: 3px;
+  background: #090b08;
+  border: 1px solid #3d4038;
+  border-radius: 8px;
+}
+.role-options label {
+  padding: 9px 4px;
+  border-radius: 5px;
+  color: #999d93;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+.role-options label.active {
+  background: var(--yellow);
+  color: #111;
+}
+.role-options input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.user-player-link {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+}
+.user-player-link select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  background: #0d0f0c;
+  color: #fff;
+  border: 1px solid #41453b;
+}
+.user-password {
+  justify-self: start;
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
