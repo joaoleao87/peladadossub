@@ -139,7 +139,7 @@ export function PlayerManager() {
       </details>
       <ul className="players-list">
         {players.map((player) => (
-          <li key={player.id}>
+          <li className="player-card" key={player.id}>
             <details>
               <summary>
                 <span>
@@ -154,7 +154,7 @@ export function PlayerManager() {
                   {player.isento_mensalidade && <em>isento</em>}
                 </span>
               </summary>
-              <section className="player-fields">
+              <section className="player-fields player-card-fields">
                 <label className="player-account">
                   Conta de acesso
                   <select

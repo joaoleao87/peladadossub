@@ -117,6 +117,16 @@
   padding: 0;
   margin: 0;
 }
+.player-card,
+.player-card > details,
+.player-card-fields,
+.player-card-fields > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.player-card {
+  overflow: hidden;
+}
 .players-list summary {
   display: flex;
   align-items: center;
@@ -150,7 +160,7 @@
 .player-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: 100%;
+  width: auto;
   max-width: 100%;
   overflow: hidden;
   gap: 12px;
@@ -245,17 +255,18 @@
   .player-tags {
     justify-content: flex-start;
   }
+  .player-card-fields {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 16px;
+  }
+  .player-card-fields > * {
+    grid-column: 1;
+  }
   .player-exemption {
     align-items: flex-start;
   }
 }
 @media (max-width: 340px) {
-  .player-fields {
-    grid-template-columns: 1fr;
-  }
-  .player-fields > * {
-    grid-column: 1;
-  }
   .player-exemption {
     flex-direction: column;
   }
