@@ -3,7 +3,6 @@ import {
   allPlayers,
   allProfiles,
   deletePlayer,
-  mergePlayers,
   ratePlayer,
   savePlayer,
   setMonthlyExemption,
@@ -21,8 +20,7 @@ export function PlayerManager() {
       ]);
       return { players, profiles };
     }),
-    [toast, setToast] = useState(""),
-    [mergeTargets, setMergeTargets] = useState<Record<string, string>>({});
+    [toast, setToast] = useState("");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
@@ -297,32 +295,6 @@ export function PlayerManager() {
                   </div>
                 )}
                 <footer>
-                  <select
-                    aria-label={`Conciliar ${player.nome} com outro jogador`}
-                    value={mergeTargets[player.id] || ""}
-                    onChange={(e) =>
-                      setMergeTargets((old) => ({ ...old, [player.id]: e.target.value }))
-                    }
-                  >
-                    <option value="">Conciliar com…</option>
-                    {players.filter((item) => item.id !== player.id).map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.apelido || item.nome}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="secondary"
-                    disabled={!mergeTargets[player.id]}
-                    onClick={() => {
-                      const target = players.find((item) => item.id === mergeTargets[player.id]);
-                      if (target && confirm(`Juntar ${player.nome} em ${target.apelido || target.nome}? Todo o histórico ficará em ${target.apelido || target.nome}.`))
-                        void run(() => mergePlayers(player.id, target.id), "Jogadores conciliados.");
-                    }}
-                  >
-                    Conciliar
-                  </button>
                   <button
                     type="button"
                     className="danger"

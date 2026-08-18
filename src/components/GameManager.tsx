@@ -47,14 +47,17 @@ export function GameManager() {
     return <ErrorState message={state.error} retry={state.reload} />;
   const { games, players, lists } = state.data!,
     gameId = selected || games[0]?.id || "",
+    game = games.find((item) => item.id === gameId),
     active = (lists[gameId] || []).filter(
       (item) => item.status !== "cancelado",
     ),
     line = active.filter(
-      (item) => item.categoria === "linha" && item.status !== "espera",
+      (item) => item.categoria === "linha" && ["confirmado", "presente"].includes(item.status),
     ),
     waiting = active.filter((item) => item.status === "espera"),
-    keepers = active.filter((item) => item.categoria === "goleiro");
+    keepers = active.filter((item) => item.categoria === "goleiro" && ["confirmado", "presente"].includes(item.status)),
+    awaiting = active.filter((item) => item.status === "aguardando_resposta"),
+    declined = active.filter((item) => ["recusado", "faltou"].includes(item.status));
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -89,7 +92,10 @@ export function GameManager() {
       {items.length ? (
         <ol className="roster-list">
           {items.map((item, index) => {
-            const name =
+            const account = item.player?.profile,
+              name =
+              account?.apelido?.trim() ||
+              account?.nome ||
               item.player?.apelido ||
               item.player?.nome ||
               item.profile?.apelido ||
@@ -98,15 +104,32 @@ export function GameManager() {
             return (
               <li key={item.id}>
                 <span className="roster-number">{index + 1}</span>
+                <span className="roster-avatar">
+                  {account?.foto_url ? <img src={account.foto_url} alt="" /> : name[0]}
+                </span>
                 <span className="roster-player">
                   <b>{name}</b>
-                  <small>{labels[item.status] || item.status}</small>
+                  <small>{item.player?.nome && item.player.nome !== name ? `${item.player.nome} • ` : ""}{labels[item.status] || item.status}</small>
                 </span>
                 <nav
                   className="roster-actions"
                   aria-label={`Ações para ${name}`}
                 >
-                  {item.status === "espera" && (
+                  {["aguardando_resposta", "recusado", "faltou"].includes(item.status) && (
+                    <button
+                      onClick={() =>
+                        run(
+                          () => adminParticipantById(item.id, "promote"),
+                          "Jogador confirmado.",
+                        )
+                      }
+                    >
+                      Confirmar
+                    </button>
+                  )}
+                  {item.status === "espera" && item.player?.tipo === "avulso" && game?.fase_lista !== "geral" ? (
+                    <button disabled>Aguarda avulsos</button>
+                  ) : item.status === "espera" && (
                     <button
                       onClick={() =>
                         run(
@@ -118,21 +141,19 @@ export function GameManager() {
                       Promover
                     </button>
                   )}
-                  <button
-                    className="secondary"
-                    onClick={() =>
-                      run(
-                        () =>
-                          adminParticipantById(
-                            item.id,
-                            item.categoria === "goleiro" ? "linha" : "goleiro",
-                          ),
-                        "Posição alterada.",
-                      )
-                    }
-                  >
-                    {item.categoria === "goleiro" ? "Linha" : "Gol"}
-                  </button>
+                  {["confirmado", "presente"].includes(item.status) && item.categoria === "linha" && (
+                    <button
+                      className="secondary"
+                      onClick={() =>
+                        run(
+                          () => adminParticipantById(item.id, "demote"),
+                          "Jogador movido para suplentes.",
+                        )
+                      }
+                    >
+                      Suplente
+                    </button>
+                  )}
                   <button
                     className="danger"
                     aria-label={`Remover ${name}`}
@@ -187,16 +208,14 @@ export function GameManager() {
                 <option value="" disabled>
                   Escolha um jogador…
                 </option>
-                {players
-                  .filter(
-                    (player) =>
-                      !active.some((item) => item.jogador_id === player.id),
-                  )
-                  .map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.apelido || player.nome}
+                {players.map((player) => {
+                  const entry = active.find((item) => item.jogador_id === player.id);
+                  return (
+                    <option key={player.id} value={player.id} disabled={Boolean(entry)}>
+                      {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Avulso"}{entry ? ` • ${labels[entry.status] || entry.status}` : ""}
                     </option>
-                  ))}
+                  );
+                })}
               </select>
               <button>Adicionar</button>
             </form>
@@ -208,9 +227,11 @@ export function GameManager() {
               <button>Conferir lista</button>
             </form>
           </details>
-          {group("Jogadores", line)}
+          {group("Confirmados", line)}
           {group("Suplentes", waiting)}
           {group("Goleiros", keepers)}
+          {group("Aguardando resposta", awaiting)}
+          {declined.length > 0 && group("Não vão", declined)}
         </>
       ) : (
         <Empty title="Nenhuma pelada cadastrada" />

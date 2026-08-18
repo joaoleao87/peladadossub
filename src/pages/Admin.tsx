@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { ErrorState, Spinner, Toast } from "../components/Ui";
-import { GameManager } from "../components/GameManager";
 import { PlayerManager } from "../components/PlayerManager";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -215,7 +214,6 @@ export function Admin() {
             </label>
             <button className="wide">SALVAR OCORRÊNCIA</button>
           </form>
-          <GameManager />
         </>
       )}
       {tab === "jogadores" && <PlayerManager />}

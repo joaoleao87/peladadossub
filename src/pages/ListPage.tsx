@@ -15,7 +15,16 @@ import {
   voteMatchAward,
 } from "../lib/api";
 import type { Participant, VoteCategory } from "../lib/database.types";
+import { formatWhatsAppList } from "../lib/whatsapp";
 import "./list-page.css";
+
+const statusLabel: Record<string, string> = {
+  aguardando_resposta: "Aguardando resposta",
+  confirmado: "Confirmado",
+  presente: "Presente",
+  espera: "Suplente",
+  recusado: "Não vai",
+};
 
 export function ListPage() {
   const { profile } = useAuth(),
@@ -68,7 +77,11 @@ export function ListPage() {
       ["confirmado", "presente"].includes(item.status),
     ),
     line = confirmed.filter((item) => item.categoria === "linha"),
-    waiting = current.filter((item) => item.status === "espera"),
+    waiting = current.filter(
+      (item) =>
+        item.status === "espera" &&
+        (isAdmin || item.player?.tipo !== "avulso" || item.player?.user_id === profile?.id),
+    ),
     keepers = confirmed.filter((item) => item.categoria === "goleiro"),
     pending = current.filter((item) => item.status === "aguardando_resposta"),
     started =
@@ -122,6 +135,24 @@ export function ListPage() {
       setTimeout(() => setToast(""), 3500);
     }
   }
+  async function exportList() {
+    const text = formatWhatsAppList(
+      `Pelada ${new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • ${game.horario.slice(0, 5)} • ${game.local}`,
+      line.map(playerName),
+      waiting.map(playerName),
+      keepers.map(playerName),
+    );
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        setToast("Lista copiada. Cole no WhatsApp.");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setToast("Não foi possível compartilhar a lista.");
+    }
+  }
   const gamePicker = (
     <>
       <p className="eyebrow">HISTÓRICO E PRÓXIMAS</p>
@@ -150,6 +181,8 @@ export function ListPage() {
       </section>
     );
   const playerName = (item: Participant) =>
+    item.player?.profile?.apelido?.trim() ||
+    item.player?.profile?.nome ||
     item.player?.apelido ||
     item.player?.nome ||
     item.profile?.apelido ||
@@ -175,15 +208,18 @@ export function ListPage() {
             >
               <b>{index + 1}</b>
               <div className="avatar">
-                {item.profile?.foto_url ? (
-                  <img src={item.profile.foto_url} alt="" />
+                {item.player?.profile?.foto_url || item.profile?.foto_url ? (
+                  <img src={item.player?.profile?.foto_url || item.profile?.foto_url || ""} alt="" />
                 ) : (
                   name[0]
                 )}
               </div>
-              <span>
+              <span className="player-name">
                 {name}
-                {item.player?.user_id === profile?.id && <small> VOCÊ</small>}
+                {isAdmin && item.player?.nome && item.player.nome !== name && (
+                  <small className="player-record-name">Jogador: {item.player.nome}</small>
+                )}
+                {item.player?.user_id === profile?.id && <small className="player-me">VOCÊ</small>}
               </span>
               {isAdmin && (
                 <nav
@@ -231,35 +267,61 @@ export function ListPage() {
                         </button>
                       </span>
                     )}
-                  {isAdmin && !started && (item.status === "espera" ? (
-                    <button
-                      type="button"
-                      className="mini"
-                      onClick={() =>
-                        void run(
-                          () => adminParticipantById(item.id, "promote"),
-                          "Suplente promovido.",
-                        )
-                      }
-                    >
-                      Promover
-                    </button>
-                  ) : (
-                    item.categoria === "linha" && (
+                  {isAdmin && !started && (
+                    <>
+                      {item.status === "aguardando_resposta" && (
+                        <button
+                          type="button"
+                          className="mini"
+                          onClick={() =>
+                            void run(
+                              () => adminParticipantById(item.id, "promote"),
+                              "Jogador confirmado.",
+                            )
+                          }
+                        >
+                          Confirmar
+                        </button>
+                      )}
+                      {item.status === "espera" && item.player?.tipo === "avulso" && phase !== "geral" ? (
+                        <button type="button" className="mini" disabled>Aguarda avulsos</button>
+                      ) : item.status === "espera" && (
+                        <button
+                          type="button"
+                          className="mini"
+                          onClick={() =>
+                            void run(
+                              () => adminParticipantById(item.id, "promote"),
+                              "Suplente promovido.",
+                            )
+                          }
+                        >
+                          Promover
+                        </button>
+                      )}
+                      {["confirmado", "presente"].includes(item.status) && item.categoria === "linha" && (
+                        <button
+                          type="button"
+                          className="mini secondary"
+                          onClick={() =>
+                            void run(
+                              () => adminParticipantById(item.id, "demote"),
+                              "Jogador movido para suplentes.",
+                            )
+                          }
+                        >
+                          Suplente
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="mini secondary"
-                        onClick={() =>
-                          void run(
-                            () => adminParticipantById(item.id, "demote"),
-                            "Jogador movido para suplentes.",
-                          )
-                        }
+                        className="mini danger"
+                        onClick={() => confirm(`Remover ${name} desta pelada?`) && void run(() => adminParticipantById(item.id, "remove"), "Jogador removido.")}
                       >
-                        Suplente
+                        Remover
                       </button>
-                    )
-                  ))}
+                    </>
+                  )}
                 </nav>
               )}
             </div>
@@ -325,19 +387,20 @@ export function ListPage() {
               <option value="" disabled>
                 Adicionar jogador…
               </option>
-              {(state.data?.players ?? [])
-                .filter(
-                  (player) =>
-                    !current.some((item) => item.jogador_id === player.id),
-                )
-                .map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.apelido || player.nome}
+              {(state.data?.players ?? []).map((player) => {
+                const entry = current.find((item) => item.jogador_id === player.id);
+                return (
+                  <option key={player.id} value={player.id} disabled={Boolean(entry)}>
+                    {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Avulso"}{entry ? ` • ${statusLabel[entry.status] || entry.status}` : ""}
                   </option>
-                ))}
+                );
+              })}
             </select>
             <button>Adicionar</button>
           </form>
+          <button type="button" className="secondary export-list" onClick={() => void exportList()}>
+            Compartilhar lista no WhatsApp
+          </button>
           {game.fase_lista !== "geral" && (
             <small>Avulsos adicionados agora ficam em espera.</small>
           )}
