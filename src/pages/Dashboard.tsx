@@ -157,7 +157,7 @@ export function Dashboard() {
         ["confirmado", "presente"].includes(p.status) &&
         p.categoria !== "goleiro",
     ),
-    mine = list.find((p) => p.user_id === profile?.id),
+    mine = list.find((p) => p.jogador_id === player?.id),
     waiting = list.filter((p) => p.status === "espera"),
     spots = Math.max(0, 20 - confirmed.length),
     position =
@@ -313,6 +313,10 @@ export function Dashboard() {
       </article>
       <Link className="section-link" to="/lista">
         <span>Ver lista completa</span>
+        <ArrowRight />
+      </Link>
+      <Link className="section-link vote-shortcut" to="/ranking#votacao">
+        <span>Avaliar a última pelada</span>
         <ArrowRight />
       </Link>
       {tutorial}

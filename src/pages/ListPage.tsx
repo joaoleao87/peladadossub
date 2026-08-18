@@ -11,7 +11,6 @@ import {
   participants,
   peladasHistory,
   rateMatchPerformance,
-  ratePlayer,
   setParticipantGoals,
   setListPhase,
   voteMatchAward,
@@ -78,8 +77,8 @@ export function ListPage() {
       new Date(`${game.data}T${game.horario}`).getTime() <= Date.now(),
     canVote =
       started &&
-      confirmed.some((item) => item.user_id === profile?.id),
-    voteTargets = confirmed.filter((item) => item.user_id !== profile?.id),
+      confirmed.some((item) => item.player?.user_id === profile?.id),
+    voteTargets = confirmed.filter((item) => item.player?.user_id !== profile?.id),
     myVotes = voting.data ?? { ratings: {}, votes: {} };
   async function run(action: () => Promise<unknown>, message: string) {
     try {
@@ -140,7 +139,7 @@ export function ListPage() {
               className={`player ${
                 isAdmin || canVote ? "interactive-player" : ""
               } ${
-                item.user_id === profile?.id ? "me" : ""
+                item.player?.user_id === profile?.id ? "me" : ""
               }`}
               key={item.id}
             >
@@ -154,45 +153,15 @@ export function ListPage() {
               </div>
               <span>
                 {name}
-                {item.user_id === profile?.id && <small> VOCÊ</small>}
+                {item.player?.user_id === profile?.id && <small> VOCÊ</small>}
               </span>
               {(isAdmin || canVote) && (
                 <nav
                   className="list-player-actions"
                   aria-label={`Ações para ${name}`}
                 >
-                  {isAdmin && !started && item.categoria === "linha" && (
-                    <span
-                      className="list-player-rating"
-                      aria-label={`Nota de equilíbrio de ${name}`}
-                    >
-                      <small>Equilíbrio</small>
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          type="button"
-                          className={`mini ${
-                            (item.player?.nota_equilibrio ?? 3) === rating
-                              ? "active"
-                              : "secondary"
-                          }`}
-                          aria-pressed={
-                            (item.player?.nota_equilibrio ?? 3) === rating
-                          }
-                          onClick={() =>
-                            void run(
-                              () => ratePlayer(item.jogador_id, rating),
-                              "Nota atualizada.",
-                            )
-                          }
-                          key={rating}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                    </span>
-                  )}
                   {canVote &&
-                    item.user_id !== profile?.id &&
+                    item.player?.user_id !== profile?.id &&
                     ["confirmado", "presente"].includes(item.status) && (
                       <span
                         className="list-player-rating performance-rating"
@@ -460,7 +429,7 @@ export function ListPage() {
       {started && !canVote && (
         <p className="voting-notice">
           {isAdmin
-            ? "Você pode registrar os gols como admin. Para dar notas e votar nos destaques, sua conta precisa estar vinculada a um jogador confirmado nesta pelada."
+            ? "Para votar: em Admin > Jogadores, vincule sua conta ao jogador correto. Esse jogador também precisa estar entre os confirmados desta pelada. Depois volte aqui para dar as notas e escolher os destaques."
             : "A votação é liberada somente para contas vinculadas aos jogadores que participaram desta pelada."}
         </p>
       )}

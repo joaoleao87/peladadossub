@@ -52,6 +52,7 @@ export async function payments() { const { data, error } = await supabase.from('
 export async function savePayment(values: Omit<Payment, 'id' | 'created_at' | 'profile'>) { const { error } = await supabase.from('pagamentos').insert(values); if (error) throw error }
 export async function peladasHistory(){const {data,error}=await supabase.from('peladas').select('*').neq('status','cancelada').order('data',{ascending:false}).order('horario',{ascending:false}).limit(30);if(error)throw error;return data as Pelada[]}
 export async function deletePlayer(id:string){const {error}=await supabase.rpc('excluir_jogador',{p_id:id});if(error)throw error}
+export async function mergePlayers(sourceId:string,targetId:string){const {error}=await supabase.rpc('conciliar_jogadores',{p_origem_id:sourceId,p_destino_id:targetId});if(error)throw error}
 export async function expenses(){const {data,error}=await supabase.from('despesas').select('*,parcelas:despesa_parcelas(*)').order('created_at',{ascending:false});if(error)throw error;return data as Expense[]}
 export async function createExpense(values:{descricao:string;data:string;parcelas:number;valor:number;valorTipo:'total'|'parcela'}){const {error}=await supabase.rpc('criar_despesa',{p_descricao:values.descricao,p_data:values.data,p_parcelas:values.parcelas,p_valor:values.valor,p_valor_tipo:values.valorTipo});if(error)throw error}
 export async function updateExpenseInstallment(id:string,paga:boolean){const {error}=await supabase.rpc('atualizar_parcela_despesa',{p_id:id,p_paga:paga});if(error)throw error}
