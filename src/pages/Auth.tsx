@@ -3,6 +3,9 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { supabase } from "../lib/supabase";
 
+const usernameEmail = (value: string) =>
+  `${value.trim().toLowerCase()}@usuarios.peladasub.com`;
+
 export function AuthPage() {
   const { session } = useAuth(),
     [signup, setSignup] = useState(false),
@@ -14,18 +17,21 @@ export function AuthPage() {
     setBusy(true);
     setMessage("");
     const values = new FormData(e.currentTarget),
-      email = String(values.get("email")),
+      login = String(values.get("login")).trim().toLowerCase(),
+      email = login.includes("@") ? login : usernameEmail(login),
       password = String(values.get("password"));
     try {
       if (signup) {
+        if (!/^[a-z0-9._-]{3,30}$/.test(login))
+          throw new Error("Use de 3 a 30 letras, números, ponto, hífen ou _.");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { nome: String(values.get("nome")) } },
+          options: { data: { nome: String(values.get("nome")), username: login } },
         });
         if (error) throw error;
         if (!data.session)
-          setMessage("Conta criada. Confirme seu e-mail para entrar.");
+          throw new Error("Desative a confirmação de e-mail no Supabase para entrar sem e-mail.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -57,8 +63,20 @@ export function AuthPage() {
           </label>
         )}
         <label>
-          E-mail
-          <input name="email" type="email" required autoComplete="email" />
+          {signup ? "Nome de usuário" : "E-mail ou usuário"}
+          <input
+            name="login"
+            type="text"
+            minLength={signup ? 3 : undefined}
+            maxLength={signup ? 30 : undefined}
+            pattern={signup ? "[a-z0-9._-]+" : undefined}
+            title={signup ? "Sem espaços: use letras minúsculas, números, ponto, hífen ou _." : undefined}
+            autoCapitalize="none"
+            autoCorrect="off"
+            required
+            autoComplete="username"
+          />
+          {signup && <small>Sem espaços. Exemplo: joao.silva</small>}
         </label>
         <label>
           Senha
