@@ -8,3 +8,5 @@ import './styles.css'
 import './adjustments.css'
 
 createRoot(document.getElementById('root')!).render(<StrictMode><AppTheme><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></AppTheme></StrictMode>)
+
+if ('serviceWorker' in navigator) addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'))
