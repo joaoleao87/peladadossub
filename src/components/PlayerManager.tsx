@@ -40,14 +40,14 @@ export function PlayerManager() {
   }
   const update = (
     player: Player,
-    changes: Partial<Pick<Player, "tipo" | "posicao" | "user_id">>,
+    changes: Partial<Pick<Player, "nome" | "tipo" | "posicao" | "user_id">>,
     message: string,
   ) =>
     run(
       () =>
         savePlayer({
           id: player.id,
-          nome: player.nome,
+          nome: changes.nome ?? player.nome,
           tipo: changes.tipo ?? player.tipo,
           posicao: changes.posicao ?? player.posicao,
           user_id:
@@ -165,6 +165,20 @@ export function PlayerManager() {
                 </span>
               </summary>
               <section className="player-fields player-card-fields">
+                <form
+                  className="player-name-editor"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const nome = String(new FormData(event.currentTarget).get("nome"));
+                    void update(player, { nome }, "Nome atualizado.");
+                  }}
+                >
+                  <label>
+                    Nome do jogador
+                    <input name="nome" defaultValue={player.nome} minLength={2} required />
+                  </label>
+                  <button>Salvar nome</button>
+                </form>
                 <label className="player-account">
                   Conta de acesso
                   <select
