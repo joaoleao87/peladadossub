@@ -195,3 +195,4 @@
     margin-left: 0;
   }
 }
+.list-coming-soon{display:grid;place-items:center;min-height:280px;padding:32px;text-align:center;background:var(--panel);border:1px solid #393c34;border-radius:14px}.list-coming-soon span{color:var(--yellow);font:800 12px Inter;letter-spacing:1.4px}.list-coming-soon h2{max-width:320px;margin:10px 0 4px}.list-coming-soon p{margin:0;color:var(--muted);font-size:12px}

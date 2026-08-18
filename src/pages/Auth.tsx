@@ -63,7 +63,7 @@ export function AuthPage() {
           </label>
         )}
         <label>
-          {signup ? "Nome de usuário" : "E-mail ou usuário"}
+          Nome de usuário
           <input
             name="login"
             type="text"

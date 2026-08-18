@@ -51,12 +51,17 @@ function HomeTutorial({
             liberar o resultado.
           </li>
           <li>
-            <b>Avalie depois do jogo.</b> Quem participou dá notas de 1 a 5 aos
-            demais e vota em destaque, surpresa e destaque negativo.
+            <b>Vote depois do jogo.</b> Quem participou escolhe o destaque, a
+            surpresa e o destaque negativo da última pelada.
           </li>
           <li>
             <b>Consulte seus dados.</b> Ranking mostra resultados agrupados; no
             Perfil ficam estatísticas, cobranças e envio de comprovante.
+          </li>
+          <li>
+            <b>Instale como aplicativo.</b> No Android, abra o menu do Chrome e
+            toque em “Instalar app”. No iPhone, abra pelo Safari, toque em
+            Compartilhar e depois em “Adicionar à Tela de Início”.
           </li>
         </ol>
         <nav className="tutorial-links" aria-label="Atalhos do jogador">

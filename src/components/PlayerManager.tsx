@@ -4,7 +4,6 @@ import {
   allProfiles,
   deletePlayer,
   mergePlayers,
-  rankingStats,
   ratePlayer,
   savePlayer,
   setMonthlyExemption,
@@ -16,19 +15,18 @@ import "./player-manager.css";
 
 export function PlayerManager() {
   const state = useLoad(async () => {
-      const [players, profiles, ranking] = await Promise.all([
+      const [players, profiles] = await Promise.all([
         allPlayers(),
         allProfiles(),
-        rankingStats(),
       ]);
-      return { players, profiles, ranking };
+      return { players, profiles };
     }),
     [toast, setToast] = useState(""),
     [mergeTargets, setMergeTargets] = useState<Record<string, string>>({});
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const { players, profiles, ranking } = state.data!;
+  const { players, profiles } = state.data!;
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -83,7 +81,7 @@ export function PlayerManager() {
           <b>Conta de acesso</b> liga o jogador ao login dele.{" "}
           <b>Tipo de cobrança</b> define mensalista ou avulso. <b>Posição</b>{" "}
           define linha ou goleiro. <b>Equilíbrio</b> é a nota do admin para o
-          sorteio; <b>desempenho</b> é a média dos votos após as peladas.
+          sorteio.
         </p>
       </header>
       <details className="player-create">
@@ -145,9 +143,6 @@ export function PlayerManager() {
       </details>
       <ul className="players-list">
         {players.map((player) => {
-          const performance = ranking.find(
-            (item) => item.jogador_id === player.id,
-          );
           return (
             <li className="player-card" key={player.id}>
               <details>
@@ -162,13 +157,6 @@ export function PlayerManager() {
                   <em>{player.tipo}</em>
                   <em>{player.posicao}</em>
                   <em>equilíbrio {player.nota_equilibrio ?? 3}</em>
-                  {performance?.media_nota !== null &&
-                    performance?.media_nota !== undefined && (
-                      <em>
-                        desempenho{" "}
-                        {performance.media_nota.toLocaleString("pt-BR")}
-                      </em>
-                    )}
                   {player.isento_mensalidade && <em>isento</em>}
                 </span>
               </summary>
@@ -280,15 +268,6 @@ export function PlayerManager() {
                     ))}
                   </div>
                 </fieldset>
-                <div className="player-performance-summary">
-                  <span>
-                    <b>Média de desempenho</b>
-                    <small>Nota dada pelos participantes depois do jogo.</small>
-                  </span>
-                  <strong>
-                    {performance?.media_nota?.toLocaleString("pt-BR") ?? "—"}
-                  </strong>
-                </div>
                 {player.tipo === "mensalista" && (
                   <div className="player-exemption">
                     <span>

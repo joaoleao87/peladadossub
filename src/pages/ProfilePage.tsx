@@ -88,12 +88,6 @@ export function ProfilePage() {
           <span>Gols</span>
         </div>
         <div>
-          <strong>
-            {performance?.media_nota?.toLocaleString("pt-BR") ?? "—"}
-          </strong>
-          <span>Nota média</span>
-        </div>
-        <div>
           <strong>{performance?.votos_destaque ?? 0}</strong>
           <span>Destaques</span>
         </div>

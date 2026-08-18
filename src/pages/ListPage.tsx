@@ -10,7 +10,6 @@ import {
   myMatchVotes,
   participants,
   peladasHistory,
-  rateMatchPerformance,
   setParticipantGoals,
   setListPhase,
   voteMatchAward,
@@ -45,7 +44,6 @@ export function ListPage() {
         activeGameId
           ? myMatchVotes(activeGameId)
           : Promise.resolve({
-              ratings: {} as Record<string, number>,
               votes: {} as Partial<Record<VoteCategory, string>>,
             }),
       activeGameId,
@@ -75,11 +73,16 @@ export function ListPage() {
     pending = current.filter((item) => item.status === "aguardando_resposta"),
     started =
       new Date(`${game.data}T${game.horario}`).getTime() <= Date.now(),
+    canSeeList =
+      isAdmin ||
+      started ||
+      phase === "geral" ||
+      (phase === "mensalistas" && profile?.mensalista_ativo),
     canVote =
       started &&
       confirmed.some((item) => item.player?.user_id === profile?.id),
     voteTargets = confirmed.filter((item) => item.player?.user_id !== profile?.id),
-    myVotes = voting.data ?? { ratings: {}, votes: {} };
+    myVotes = voting.data ?? { votes: {} };
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -119,6 +122,33 @@ export function ListPage() {
       setTimeout(() => setToast(""), 3500);
     }
   }
+  const gamePicker = (
+    <>
+      <p className="eyebrow">HISTÓRICO E PRÓXIMAS</p>
+      <h1>Peladas</h1>
+      <label className="game-picker">
+        Escolha a pelada
+        <select value={game.id} onChange={(event) => setSelected(event.target.value)}>
+          {games.map((item) => (
+            <option value={item.id} key={item.id}>
+              {new Date(`${item.data}T12:00`).toLocaleDateString("pt-BR")} • {item.horario.slice(0, 5)} • {item.local}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+  if (!canSeeList)
+    return (
+      <section>
+        {gamePicker}
+        <div className="list-coming-soon">
+          <span>EM BREVE</span>
+          <h2>A lista ainda não foi liberada para você</h2>
+          <p>Volte quando a próxima fase da lista estiver aberta.</p>
+        </div>
+      </section>
+    );
   const playerName = (item: Participant) =>
     item.player?.apelido ||
     item.player?.nome ||
@@ -137,7 +167,7 @@ export function ListPage() {
           return (
             <div
               className={`player ${
-                isAdmin || canVote ? "interactive-player" : ""
+                isAdmin ? "interactive-player" : ""
               } ${
                 item.player?.user_id === profile?.id ? "me" : ""
               }`}
@@ -155,49 +185,11 @@ export function ListPage() {
                 {name}
                 {item.player?.user_id === profile?.id && <small> VOCÊ</small>}
               </span>
-              {(isAdmin || canVote) && (
+              {isAdmin && (
                 <nav
                   className="list-player-actions"
                   aria-label={`Ações para ${name}`}
                 >
-                  {canVote &&
-                    item.player?.user_id !== profile?.id &&
-                    ["confirmado", "presente"].includes(item.status) && (
-                      <span
-                        className="list-player-rating performance-rating"
-                        aria-label={`Sua nota de desempenho para ${name}`}
-                      >
-                        <small>Minha nota</small>
-                        {[1, 2, 3, 4, 5].map((note) => (
-                          <button
-                            type="button"
-                            className={`mini ${
-                              myVotes.ratings[item.jogador_id] === note
-                                ? "active"
-                                : "secondary"
-                            }`}
-                            aria-pressed={
-                              myVotes.ratings[item.jogador_id] === note
-                            }
-                            disabled={voting.loading}
-                            onClick={() =>
-                              void vote(
-                                () =>
-                                  rateMatchPerformance(
-                                    game.id,
-                                    item.jogador_id,
-                                    note,
-                                  ),
-                                "Avaliação registrada.",
-                              )
-                            }
-                            key={note}
-                          >
-                            {note}
-                          </button>
-                        ))}
-                      </span>
-                    )}
                   {isAdmin &&
                     started &&
                     ["confirmado", "presente"].includes(item.status) && (
@@ -280,22 +272,7 @@ export function ListPage() {
   );
   return (
     <section>
-      <p className="eyebrow">HISTÓRICO E PRÓXIMAS</p>
-      <h1>Peladas</h1>
-      <label className="game-picker">
-        Escolha a pelada
-        <select
-          value={game.id}
-          onChange={(event) => setSelected(event.target.value)}
-        >
-          {games.map((item) => (
-            <option value={item.id} key={item.id}>
-              {new Date(`${item.data}T12:00`).toLocaleDateString("pt-BR")} •{" "}
-              {item.horario.slice(0, 5)} • {item.local}
-            </option>
-          ))}
-        </select>
-      </label>
+      {gamePicker}
       {isAdmin && !["encerrada", "cancelada"].includes(game.status) && (
         <section className="list-admin-panel">
           <header>
@@ -372,8 +349,7 @@ export function ListPage() {
       </p>
       {started && canVote && (
         <p className="voting-notice voting-ready">
-          <b>Como votar:</b> dê sua nota nos botões “Minha nota” de cada
-          jogador. Depois escolha destaque, surpresa e destaque negativo no
+          <b>Como votar:</b> escolha destaque, surpresa e destaque negativo no
           final da lista.
         </p>
       )}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
-import { myMatchVotes, myPlayer, participants, peladasHistory, rankingStats, rateMatchPerformance, voteMatchAward } from "../lib/api";
+import { myMatchVotes, myPlayer, participants, peladasHistory, rankingStats, voteMatchAward } from "../lib/api";
 import type { RankingStats, VoteCategory } from "../lib/database.types";
 import "./ranking.css";
 
@@ -11,7 +11,7 @@ export function Ranking() {
     const [rows, games, player] = await Promise.all([rankingStats(), peladasHistory(), myPlayer()]);
     const game = games.find((item) => new Date(`${item.data}T${item.horario}`).getTime() <= Date.now());
     const list = game ? await participants(game.id) : [];
-    const votes = game ? await myMatchVotes(game.id) : { ratings: {}, votes: {} };
+    const votes = game ? await myMatchVotes(game.id) : { votes: {} };
     return { rows, game, player, list, votes };
   }, []);
   if (state.loading) return <Spinner />;
@@ -68,24 +68,12 @@ export function Ranking() {
       <h1>Ranking</h1>
       <section className="ranking-vote" id="votacao">
         <p className="eyebrow">ÚLTIMA PELADA</p>
-        <h2>Avalie os jogadores</h2>
+        <h2>Escolha os destaques</h2>
         {game && <small>{new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • {game.local}</small>}
         {!game ? <Empty title="Nenhuma pelada realizada" /> : !canVote ? (
           <p className="voting-notice">Sua conta precisa estar vinculada ao jogador que participou desta pelada.</p>
         ) : (
           <>
-            <div className="ranking-rating-list">
-              {targets.map((item) => (
-                <div key={item.jogador_id}>
-                  <b>{playerName(item)}</b>
-                  <span aria-label={`Nota para ${playerName(item)}`}>
-                    {[1, 2, 3, 4, 5].map((note) => (
-                      <button type="button" className={votes.ratings[item.jogador_id] === note ? "active" : "secondary"} onClick={() => void vote(() => rateMatchPerformance(game.id, item.jogador_id, note), "Nota registrada.")} key={note}>{note}</button>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </div>
             <div className="ranking-awards">
               {([['destaque','Destaque'],['surpresa','Surpresa'],['negativo','Destaque negativo']] as [VoteCategory,string][]).map(([category,label]) => (
                 <label key={category}>{label}<select value={votes.votes[category] ?? ""} onChange={(event) => void vote(() => voteMatchAward(game.id, category, event.target.value || null), "Destaque registrado.")}><option value="">Escolha um jogador</option>{targets.map((item) => <option value={item.jogador_id} key={item.jogador_id}>{playerName(item)}</option>)}</select></label>
@@ -95,12 +83,6 @@ export function Ranking() {
         )}
       </section>
       <div className="ranking-grid">
-        {board(
-          "Melhores notas",
-          (row) => row.media_nota ?? 0,
-          (row) => (row.media_nota ?? 0).toLocaleString("pt-BR"),
-          (row) => `${row.total_avaliacoes} avaliações`,
-        )}
         {board(
           "Artilharia",
           (row) => row.gols,
