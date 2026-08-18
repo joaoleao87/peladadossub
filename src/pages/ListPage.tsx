@@ -137,7 +137,7 @@ export function ListPage() {
   }
   async function exportList() {
     const text = formatWhatsAppList(
-      `Pelada ${new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • ${game.horario.slice(0, 5)} • ${game.local}`,
+      `Pelada ${new Date(`${game!.data}T12:00`).toLocaleDateString("pt-BR")} • ${game!.horario.slice(0, 5)} • ${game!.local}`,
       line.map(playerName),
       waiting.map(playerName),
       keepers.map(playerName),
