@@ -7,11 +7,13 @@ import {
   adminAddPlayer,
   adminParticipantById,
   allPlayers,
+  myPlayer,
   myMatchVotes,
   participants,
   peladasHistory,
   setParticipantGoals,
   setListPhase,
+  respondPelada,
   voteMatchAward,
 } from "../lib/api";
 import type { Participant, VoteCategory } from "../lib/database.types";
@@ -32,9 +34,10 @@ export function ListPage() {
     [selected, setSelected] = useState(""),
     [toast, setToast] = useState("");
   const state = useLoad(async () => {
-    const [games, players] = await Promise.all([
+    const [games, players, ownPlayer] = await Promise.all([
         peladasHistory(),
         isAdmin ? allPlayers() : Promise.resolve([]),
+        myPlayer(),
       ]),
       entries = await Promise.all(
         games.map(
@@ -44,6 +47,7 @@ export function ListPage() {
     return {
       games,
       players,
+      ownPlayer,
       lists: Object.fromEntries(entries) as Record<string, Participant[]>,
     };
   });
@@ -84,6 +88,7 @@ export function ListPage() {
     ),
     keepers = confirmed.filter((item) => item.categoria === "goleiro"),
     pending = current.filter((item) => item.status === "aguardando_resposta"),
+    mine = current.find((item) => item.jogador_id === state.data?.ownPlayer?.id),
     started =
       new Date(`${game.data}T${game.horario}`).getTime() <= Date.now(),
     canSeeList =
@@ -91,6 +96,11 @@ export function ListPage() {
       started ||
       phase === "geral" ||
       (phase === "mensalistas" && profile?.mensalista_ativo),
+    canAnswer =
+      Boolean(state.data?.ownPlayer) &&
+      !started &&
+      (phase === "geral" ||
+        (phase === "mensalistas" && profile?.mensalista_ativo)),
     canVote =
       started &&
       confirmed.some((item) => item.player?.user_id === profile?.id),
@@ -410,6 +420,48 @@ export function ListPage() {
         {new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} •{" "}
         {game.horario.slice(0, 5)}
       </p>
+      {canAnswer &&
+        (!mine || ["aguardando_resposta", "recusado"].includes(mine.status)) && (
+          <section className="list-response">
+            <span>
+              <b>Você vai jogar?</b>
+              <small>Confirme sua participação nesta pelada.</small>
+            </span>
+            <div>
+              <button
+                type="button"
+                onClick={() =>
+                  void run(
+                    () => respondPelada(gameId, true),
+                    "Participação registrada.",
+                  )
+                }
+              >
+                {mine ? "Vou" : "Entrar na lista"}
+              </button>
+              {mine?.status === "aguardando_resposta" && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() =>
+                    void run(
+                      () => respondPelada(gameId, false),
+                      "Resposta registrada.",
+                    )
+                  }
+                >
+                  Não vou
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+      <div className="list-summary">
+        <div><b>{line.length}</b><span>Confirmados</span></div>
+        <div><b>{waiting.length}</b><span>Suplentes</span></div>
+        <div><b>{keepers.length}</b><span>Goleiros</span></div>
+        {isAdmin && <div><b>{pending.length}</b><span>Aguardando</span></div>}
+      </div>
       {started && canVote && (
         <p className="voting-notice voting-ready">
           <b>Como votar:</b> escolha destaque, surpresa e destaque negativo no

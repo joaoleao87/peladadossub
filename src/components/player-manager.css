@@ -323,3 +323,4 @@
     flex-direction: column;
   }
 }
+.player-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}.player-summary div{display:grid;gap:4px;padding:14px;background:var(--panel);border:1px solid #30322c;border-radius:12px}.player-summary b{color:var(--yellow);font:800 24px 'Barlow Condensed'}.player-summary span{color:var(--muted);font-size:9px}@media(max-width:520px){.player-summary{grid-template-columns:1fr 1fr}}

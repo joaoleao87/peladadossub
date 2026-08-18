@@ -73,6 +73,12 @@ export function PlayerManager() {
   }
   return (
     <section className="players-panel">
+      <div className="player-summary">
+        <div><b>{players.length}</b><span>Jogadores</span></div>
+        <div><b>{players.filter((player) => player.tipo === "mensalista").length}</b><span>Mensalistas</span></div>
+        <div><b>{players.filter((player) => player.tipo === "avulso").length}</b><span>Avulsos</span></div>
+        <div><b>{players.filter((player) => player.posicao === "goleiro").length}</b><span>Goleiros</span></div>
+      </div>
       <header>
         <small>ENTENDA OS CAMPOS</small>
         <p>

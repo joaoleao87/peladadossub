@@ -5,7 +5,6 @@ import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
   adminSummary,
-  allPlayers,
   generateNextPelada,
   savePelada,
   saveSeries,
@@ -16,17 +15,16 @@ export function Admin() {
   const [tab, setTab] = useState<"pelada" | "jogadores">("pelada"),
     [toast, setToast] = useState("");
   const state = useLoad(async () => {
-    const [summary, players, series] = await Promise.all([
+    const [summary, series] = await Promise.all([
       adminSummary(),
-      allPlayers(),
       activeSeries(),
     ]);
-    return { summary, players, series };
+    return { summary, series };
   });
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const { summary, players, series } = state.data!;
+  const { summary, series } = state.data!;
   const feedback = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(""), 3500);
@@ -86,36 +84,6 @@ export function Admin() {
     <section>
       <p className="eyebrow">DIRETORIA</p>
       <h1>Admin</h1>
-      <div className="admin-metrics">
-        <div>
-          <b>
-            {
-              summary.list.filter(
-                (p) => p.status === "confirmado" && p.categoria !== "goleiro",
-              ).length
-            }
-          </b>
-          <span>Confirmados</span>
-        </div>
-        <div>
-          <b>{summary.list.filter((p) => p.status === "espera").length}</b>
-          <span>Suplentes</span>
-        </div>
-        <div>
-          <b>
-            {
-              summary.list.filter(
-                (p) => p.status === "confirmado" && p.categoria === "goleiro",
-              ).length
-            }
-          </b>
-          <span>Goleiros</span>
-        </div>
-        <div>
-          <b>{players.filter((p) => p.tipo === "mensalista").length}</b>
-          <span>Mensalistas</span>
-        </div>
-      </div>
       <div className="tabs">
         {(["pelada", "jogadores"] as const).map((x) => (
           <button
