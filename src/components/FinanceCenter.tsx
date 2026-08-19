@@ -54,7 +54,10 @@ export function FinanceCenter() {
     ),
     casual = items.filter(
       (x) => x.tipo === "avulso" && x.pelada_id === selectedGame,
-    );
+    ),
+    receivables = items.filter((item) => ["pendente", "atrasado"].includes(item.status)).sort((a,b)=>(a.data_vencimento??"9999").localeCompare(b.data_vencimento??"9999")).slice(0,5),
+    payables = costs.flatMap((cost)=>cost.parcelas.filter((installment)=>!installment.paga).map((installment)=>({...installment,descricao:cost.descricao}))).sort((a,b)=>a.data_vencimento.localeCompare(b.data_vencimento)).slice(0,5),
+    date = (value:string|null|undefined) => value ? new Date(`${value}T12:00`).toLocaleDateString("pt-BR") : "Sem vencimento";
   const feedback = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(""), 3500);
@@ -179,26 +182,32 @@ export function FinanceCenter() {
         <>
           <div className="finance-kpis">
             <div>
-              <span>Saldo atual</span>
+              <span>Em caixa</span>
               <b>{money.format(summary.balance)}</b>
             </div>
-            <div>
-              <span>Saldo previsto</span>
+            <div className={summary.expectedBalance < 0 ? "negative" : ""}>
+              <span>Resultado previsto</span>
               <b>{money.format(summary.expectedBalance)}</b>
             </div>
             <div>
-              <span>Gastos previstos</span>
-              <b>{money.format(summary.futureCosts)}</b>
+              <span>Pendências</span>
+              <b>{money.format(summary.pendingIncome)}</b>
+              <small>{summary.pendingCount} cobrança{summary.pendingCount===1?"":"s"} em aberto</small>
             </div>
           </div>
-          <div className="panel">
-            <h2>Como funciona</h2>
-            <p>
-              <b>Saldo atual:</b> pagamentos recebidos menos despesas pagas.
-            </p>
-            <p>
-              <b>Saldo previsto:</b> todas as cobranças menos todas as despesas.
-            </p>
+          <div className="finance-explanation">
+            <b>Por que o previsto pode ficar negativo?</b>
+            <span>{money.format(summary.balance)} em caixa + {money.format(summary.pendingIncome)} a receber − {money.format(summary.futureCosts)} a pagar = <strong>{money.format(summary.expectedBalance)}</strong>.</span>
+          </div>
+          <div className="finance-schedule">
+            <section className="panel">
+              <h2>Próximos recebimentos</h2>
+              {receivables.length ? receivables.map((payment)=><div className="schedule-row" key={payment.id}><span><b>{payment.player?.apelido||payment.player?.nome||payment.profile?.apelido||payment.profile?.nome||"Jogador"}</b><small>{payment.referencia||payment.tipo} • {date(payment.data_vencimento)}</small></span><strong>{money.format(Number(payment.valor))}</strong></div>) : <Empty title="Nada a receber"/>}
+            </section>
+            <section className="panel">
+              <h2>Próximos pagamentos</h2>
+              {payables.length ? payables.map((installment)=><div className="schedule-row" key={installment.id}><span><b>{installment.descricao}</b><small>Parcela {installment.numero} • {date(installment.data_vencimento)}</small></span><strong>{money.format(Number(installment.valor))}</strong></div>) : <Empty title="Nada a pagar"/>}
+            </section>
           </div>
         </>
       )}
