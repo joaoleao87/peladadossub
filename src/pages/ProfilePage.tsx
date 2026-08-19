@@ -56,12 +56,38 @@ export function ProfilePage() {
   return (
     <section>
       <div className="profile-head">
-        <div className="profile-avatar">
+        <div
+          className="profile-avatar"
+          style={{ position: "relative", cursor: "pointer" }}
+        >
           {image ? (
             <img src={image} alt="" />
           ) : (
             (profile.apelido || profile.nome)[0]
           )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label="Alterar foto do perfil"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              opacity: 0,
+              cursor: "pointer",
+            }}
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              if (file?.size && file.size > 5 * 1024 * 1024) {
+                setToast("A foto deve ter até 5 MB.");
+                e.target.value = "";
+                return;
+              }
+              setPhoto(file);
+              setPreview(file ? URL.createObjectURL(file) : "");
+            }}
+          />
         </div>
         <h1>{profile.apelido || profile.nome}</h1>
         <p>{profile.nome}</p>
@@ -111,24 +137,6 @@ export function ProfilePage() {
         <label>
           Telefone
           <input name="telefone" defaultValue={profile.telefone ?? ""} />
-        </label>
-        <label className="wide">
-          Foto do perfil
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file?.size && file.size > 5 * 1024 * 1024) {
-                setToast("A foto deve ter até 5 MB.");
-                e.target.value = "";
-                return;
-              }
-              setPhoto(file);
-              setPreview(file ? URL.createObjectURL(file) : "");
-            }}
-          />
-          <small>JPG, PNG ou WEBP • até 5 MB</small>
         </label>
         <button className="wide">SALVAR CADASTRO</button>
       </form>
