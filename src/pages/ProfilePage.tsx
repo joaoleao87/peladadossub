@@ -59,7 +59,13 @@ export function ProfilePage() {
       setTimeout(() => setToast(""), 3500);
     }
   }
-  const image = removePhoto ? "" : preview || profile.foto_url;
+  const image = removePhoto ? "" : preview || profile.foto_url,
+    displayName = profile.apelido || profile.nome,
+    secondaryName =
+      profile.apelido?.trim().toLocaleLowerCase() ===
+      profile.nome.trim().toLocaleLowerCase()
+        ? ""
+        : profile.nome;
   return (
     <section>
       <div className="profile-head">
@@ -75,8 +81,9 @@ export function ProfilePage() {
                 {image ? "ALTERAR" : "ADICIONAR"}
               </span>
             </span>
-            <strong>{image ? "Alterar foto" : "Adicionar foto"}</strong>
-            <small>Toque para escolher uma imagem</small>
+            <small>
+              Toque na foto para {image ? "substituir" : "adicionar uma imagem"}
+            </small>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -114,14 +121,16 @@ export function ProfilePage() {
             </small>
           )}
         </div>
-        <h1>{profile.apelido || profile.nome}</h1>
-        <p>{profile.nome}</p>
-        <Badge>
-          {profile.tipo_jogador.toUpperCase()} •{" "}
-          {profile.posicao_lista.toUpperCase()}
-        </Badge>
+        <div className="profile-identity">
+          <h1>{displayName}</h1>
+          {secondaryName && <p>{secondaryName}</p>}
+          <Badge>
+            {profile.tipo_jogador.toUpperCase()} •{" "}
+            {profile.posicao_lista.toUpperCase()}
+          </Badge>
+        </div>
       </div>
-      <div className="stats">
+      <div className="stats profile-stats">
         <div>
           <strong>{stats.participacoes}</strong>
           <span>Partidas</span>
