@@ -196,7 +196,7 @@
   }
 }
 .list-coming-soon{display:grid;place-items:center;min-height:280px;padding:32px;text-align:center;background:var(--panel);border:1px solid #393c34;border-radius:14px}.list-coming-soon span{color:var(--yellow);font:800 12px Inter;letter-spacing:1.4px}.list-coming-soon h2{max-width:320px;margin:10px 0 4px}.list-coming-soon p{margin:0;color:var(--muted);font-size:12px}
-.player-name{display:grid;gap:2px}.player-name .player-record-name{color:var(--muted);font-size:9px;font-weight:500}.player-name .player-me{color:var(--yellow)}
+.player-name{display:grid;gap:2px}.player-name .player-record-name{color:var(--muted);font-size:9px;font-weight:500}.player-name .player-linked-account{color:#7ce7a2;font-size:9px}.player-name .player-me{color:var(--yellow)}
 .export-list{width:100%}
 .list-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0 22px}.list-summary div{display:grid;gap:3px;padding:11px 8px;background:var(--panel);border:1px solid #30322c;border-radius:10px}.list-summary b{color:var(--yellow);font:800 22px 'Barlow Condensed'}.list-summary span{color:var(--muted);font-size:8px;text-transform:uppercase}@media(max-width:420px){.list-summary{grid-template-columns:1fr 1fr}}
 .list-summary{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}

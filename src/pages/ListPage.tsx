@@ -233,6 +233,9 @@ export function ListPage() {
                 {isAdmin && item.player?.nome && item.player.nome !== name && (
                   <small className="player-record-name">Jogador: {item.player.nome}</small>
                 )}
+                {isAdmin && (item.player?.user_id || item.user_id) && (
+                  <small className="player-linked-account">CONTA VINCULADA</small>
+                )}
                 {isMine(item) && <small className="player-me">VOCÊ</small>}
               </span>
               {isAdmin && (

@@ -1,6 +1,7 @@
 node_modules
 node_modules_broken
 dist
+graphify-out/
 .env
 .env.local
 *.log
