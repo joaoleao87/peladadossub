@@ -1,0 +1,2 @@
+export const CROP_SIZE=300
+export function cropGeometry(width:number,height:number,zoom:number,x:number,y:number){const base=Math.max(CROP_SIZE/width,CROP_SIZE/height),scale=base*zoom,maxX=Math.max(0,(width*scale-CROP_SIZE)/2),maxY=Math.max(0,(height*scale-CROP_SIZE)/2),offsetX=Math.max(-maxX,Math.min(maxX,x)),offsetY=Math.max(-maxY,Math.min(maxY,y)),sourceSize=CROP_SIZE/scale;return{base,offsetX,offsetY,sourceSize,sourceX:(width-sourceSize)/2-offsetX/scale,sourceY:(height-sourceSize)/2-offsetY/scale}}

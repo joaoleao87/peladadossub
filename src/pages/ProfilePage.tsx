@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { LogOut } from "../components/Icons";
 import { MyPayments } from "../components/MyPayments";
+import { AvatarCropper } from "../components/AvatarCropper";
 import { Badge, Spinner, Toast } from "../components/Ui";
 import {
   updateOwnProfile,
@@ -15,6 +16,7 @@ export function ProfilePage() {
     [toast, setToast] = useState(""),
     [photo, setPhoto] = useState<File | null>(null),
     [preview, setPreview] = useState(""),
+    [cropSource, setCropSource] = useState(""),
     [removePhoto, setRemovePhoto] = useState(false);
   if (!profile) return <Spinner />;
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -76,24 +78,12 @@ export function ProfilePage() {
                 e.target.value = "";
                 return;
               }
-              setPhoto(file);
-              setPreview(file ? URL.createObjectURL(file) : "");
-              setRemovePhoto(false);
+              if(file){setCropSource(URL.createObjectURL(file));setRemovePhoto(false)}
             }}
           />
           </label>
           {image && (
-            <button
-              type="button"
-              className="profile-photo-remove"
-              onClick={() => {
-                setPhoto(null);
-                setPreview("");
-                setRemovePhoto(true);
-              }}
-            >
-              Remover foto
-            </button>
+            <div className="profile-photo-actions"><button type="button" onClick={()=>setCropSource(image)}>Ajustar foto</button><button type="button" className="profile-photo-remove" onClick={() => {setPhoto(null);setPreview("");setRemovePhoto(true)}}>Remover foto</button></div>
           )}
           {(photo || removePhoto) && (
             <small className="profile-photo-pending">
@@ -139,6 +129,7 @@ export function ProfilePage() {
         <LogOut /> SAIR DA CONTA
       </button>
       <Toast message={toast} />
+      {cropSource&&<AvatarCropper src={cropSource} onCancel={()=>{if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setCropSource('')}} onConfirm={file=>{if(preview.startsWith('blob:'))URL.revokeObjectURL(preview);if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setPhoto(file);setPreview(URL.createObjectURL(file));setCropSource('');setRemovePhoto(false)}}/>}
     </section>
   );
 }

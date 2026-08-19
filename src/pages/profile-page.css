@@ -44,11 +44,13 @@
   color: #ff8f8f;
   font: 600 11px Inter;
 }
+.profile-photo-actions{display:flex;align-items:center;gap:8px}.profile-photo-actions button{min-height:30px;padding:5px 8px;background:transparent;color:var(--yellow);font:600 11px Inter}.crop-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:#000d}.crop-modal>section{display:grid;justify-items:center;gap:14px;width:min(100%,380px);padding:18px;background:#151713;border:1px solid #3a3d35;border-radius:16px}.crop-modal header{position:static;width:100%;height:auto;padding:0;background:none;border:0}.crop-close{min-width:38px;min-height:38px;padding:0;background:transparent;color:#fff;font:400 30px Inter}.crop-stage{position:relative;overflow:hidden;background:#090a08;touch-action:none;cursor:move}.crop-stage img{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;translate:-50% -50%;user-select:none;pointer-events:none}.crop-stage span{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 80px #0009,inset 0 0 0 2px var(--yellow);pointer-events:none}.crop-modal>section>small{color:var(--muted)}.crop-zoom{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;width:100%;color:#fff;font-size:12px}.crop-zoom input{width:100%;accent-color:var(--yellow)}.crop-modal footer{display:flex;justify-content:flex-end;gap:8px;width:100%}.crop-modal footer button{flex:1}
 
 .profile-photo-pending {
   color: var(--yellow);
   font-size: 10px;
 }
+.crop-error{margin:0;color:#ff8f8f;font-size:11px}
 
 .profile-identity {
   display: grid;
