@@ -28,6 +28,7 @@
   display: grid;
   gap: 5px;
 }
+.user-card summary>span:nth-child(2){display:grid;gap:5px;flex:1}.user-avatar{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;overflow:hidden;border-radius:50%;background:#30332b;color:var(--yellow);font-weight:800}.user-avatar img{width:100%;height:100%;object-fit:cover}
 .user-card summary small,
 .user-editor small {
   color: var(--muted);

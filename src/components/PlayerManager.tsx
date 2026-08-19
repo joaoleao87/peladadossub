@@ -20,11 +20,14 @@ export function PlayerManager() {
       ]);
       return { players, profiles };
     }),
-    [toast, setToast] = useState("");
+    [toast, setToast] = useState(""),
+    [search,setSearch]=useState(""),
+    [filter,setFilter]=useState<"todos"|PlayerType|ListPosition|"sem_conta">("todos");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const { players, profiles } = state.data!;
+  const query=search.trim().toLocaleLowerCase(),filteredPlayers=players.filter(player=>(filter==="todos"||(filter==="sem_conta"?!player.user_id:player.tipo===filter||player.posicao===filter))&&(!query||[player.nome,player.apelido,player.profile?.nome,player.profile?.apelido].some(value=>value?.toLocaleLowerCase().includes(query))));
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -145,12 +148,18 @@ export function PlayerManager() {
           <button>Cadastrar</button>
         </form>
       </details>
+      <div className="player-list-filters">
+        <input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar jogador…" aria-label="Buscar jogador"/>
+        <nav aria-label="Filtros de jogadores">{([{value:"todos",label:"Todos"},{value:"mensalista",label:"Mensalistas"},{value:"avulso",label:"Diaristas"},{value:"linha",label:"Linha"},{value:"goleiro",label:"Goleiros"},{value:"sem_conta",label:"Sem conta"}] as const).map(item=><button type="button" className={filter===item.value?"active":""} onClick={()=>setFilter(item.value)} key={item.value}>{item.label}</button>)}</nav>
+        <small>{filteredPlayers.length} de {players.length} jogadores</small>
+      </div>
       <ul className="players-list">
-        {players.map((player) => {
+        {filteredPlayers.map((player) => {
           return (
             <li className="player-card" key={player.id}>
               <details>
               <summary>
+                <div className="player-list-avatar" aria-hidden="true">{player.profile?.foto_url?<img src={player.profile.foto_url} alt=""/>:(player.apelido||player.nome).charAt(0).toUpperCase()}</div>
                 <span>
                   <b>{player.apelido || player.nome}</b>
                   <small>

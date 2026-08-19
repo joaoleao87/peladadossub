@@ -1,0 +1,6 @@
+import {useState} from 'react'
+import {usePwaInstall} from '../hooks/usePwaInstall'
+
+export function IOSInstallInstructions({onClose}:{onClose:()=>void}){return <div className="install-modal" role="presentation" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section role="dialog" aria-modal="true" aria-labelledby="ios-install-title"><button className="install-close" type="button" aria-label="Fechar" onClick={onClose}>×</button><span className="share-icon" aria-hidden="true">⇧</span><h2 id="ios-install-title">Instale o Pelada dos Sub</h2><p>Tenha acesso às suas peladas mais rápido, direto pela Tela de Início.</p><ol><li>Toque no botão <b>Compartilhar</b> do navegador.</li><li>Escolha <b>“Adicionar à Tela de Início”</b>.</li><li>Confirme em <b>“Adicionar”</b>.</li></ol></section></div>}
+
+export function InstallAppButton({className=''}:{className?:string}){const {state,install}=usePwaInstall(),[showIOS,setShowIOS]=useState(false);if(state==='loading'||state==='installed'||state==='unsupported')return null;return <><button type="button" className={className} onClick={()=>state==='ios'?setShowIOS(true):void install()}>{state==='ios'?'Adicionar à Tela de Início':'Instalar Pelada dos Sub'}</button>{showIOS&&<IOSInstallInstructions onClose={()=>setShowIOS(false)}/>}</>}

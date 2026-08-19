@@ -171,6 +171,7 @@ export function SuperAdmin() {
             return (
               <details className="user-card" key={profile.id}>
                 <summary>
+                  <div className="user-avatar" aria-hidden="true">{profile.foto_url?<img src={profile.foto_url} alt=""/>:(profile.apelido||profile.nome).charAt(0).toUpperCase()}</div>
                   <span>
                     <b>{profile.apelido || profile.nome}</b>
                     <small>

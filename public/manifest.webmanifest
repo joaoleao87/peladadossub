@@ -1,13 +1,14 @@
 {
   "name": "Pelada dos Sub",
-  "short_name": "Pelada Sub",
+  "short_name": "Pelada dos Sub",
+  "id": "/",
   "description": "Lista, times, ranking e financeiro da Pelada dos Sub.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#090a08",
-  "theme_color": "#090a08",
+  "theme_color": "#f5c400",
   "icons": [
     {
       "src": "/icon-192.png",
