@@ -2,11 +2,8 @@ import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { LogOut } from "../components/Icons";
 import { MyPayments } from "../components/MyPayments";
-import { Badge, ErrorState, Spinner, Toast } from "../components/Ui";
-import { useLoad } from "../hooks/useLoad";
+import { Badge, Spinner, Toast } from "../components/Ui";
 import {
-  profileStats,
-  rankingStats,
   updateOwnProfile,
   uploadAvatar,
 } from "../lib/api";
@@ -15,24 +12,11 @@ import "./profile-page.css";
 
 export function ProfilePage() {
   const { profile, refreshProfile } = useAuth(),
-    state = useLoad(
-      async () => ({
-        stats: await profileStats(profile!.id),
-        ranking: await rankingStats(),
-      }),
-      [profile?.id],
-    ),
     [toast, setToast] = useState(""),
     [photo, setPhoto] = useState<File | null>(null),
     [preview, setPreview] = useState(""),
     [removePhoto, setRemovePhoto] = useState(false);
-  if (!profile || state.loading) return <Spinner />;
-  if (state.error)
-    return <ErrorState message={state.error} retry={state.reload} />;
-  const stats = state.data!.stats,
-    performance = state.data!.ranking.find(
-      (row) => row.user_id === profile.id,
-    );
+  if (!profile) return <Spinner />;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -61,11 +45,7 @@ export function ProfilePage() {
   }
   const image = removePhoto ? "" : preview || profile.foto_url,
     displayName = profile.apelido || profile.nome,
-    secondaryName =
-      profile.apelido?.trim().toLocaleLowerCase() ===
-      profile.nome.trim().toLocaleLowerCase()
-        ? ""
-        : profile.nome;
+    secondaryName = profile.nome;
   return (
     <section>
       <div className="profile-head">
@@ -125,37 +105,14 @@ export function ProfilePage() {
           <h1>{displayName}</h1>
           {secondaryName && <p>{secondaryName}</p>}
           <Badge>
-            {profile.tipo_jogador.toUpperCase()} •{" "}
+            {profile.tipo_jogador === "mensalista" ? "MENSALISTA" : "DIARISTA"} •{" "}
             {profile.posicao_lista.toUpperCase()}
           </Badge>
         </div>
       </div>
-      <div className="stats profile-stats">
-        <div>
-          <strong>{stats.participacoes}</strong>
-          <span>Partidas</span>
-        </div>
-        <div>
-          <strong>{stats.presencas}</strong>
-          <span>Presenças</span>
-        </div>
-        <div>
-          <strong>{stats.faltas}</strong>
-          <span>Faltas</span>
-        </div>
-        <div>
-          <strong>{performance?.gols ?? 0}</strong>
-          <span>Gols</span>
-        </div>
-        <div>
-          <strong>{performance?.votos_destaque ?? 0}</strong>
-          <span>Destaque</span>
-        </div>
-      </div>
-      <form className="panel form-grid" onSubmit={submit}>
+      <form className="panel profile-settings" onSubmit={submit}>
         <h2>Meu cadastro</h2>
-        <label>
-          Nome
+        <label><span>Nome</span>
           <input
             name="nome"
             defaultValue={profile.nome}
@@ -163,15 +120,16 @@ export function ProfilePage() {
             required
           />
         </label>
-        <label>
-          Apelido
+        <label><span>Apelido</span>
           <input name="apelido" defaultValue={profile.apelido ?? ""} />
         </label>
-        <label>
-          Telefone
+        <label><span>Telefone</span>
           <input name="telefone" defaultValue={profile.telefone ?? ""} />
         </label>
-        <button className="wide">SALVAR CADASTRO</button>
+        <div className="profile-readonly"><span>Categoria</span><b>{profile.tipo_jogador === "mensalista" ? "Mensalista" : "Diarista"}</b></div>
+        <div className="profile-readonly"><span>Posição</span><b>{profile.posicao_lista === "goleiro" ? "Goleiro" : "Linha"}</b></div>
+        <small>A categoria e a posição são definidas pela administração.</small>
+        <button>SALVAR ALTERAÇÕES</button>
       </form>
       <MyPayments />
       <button

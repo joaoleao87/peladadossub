@@ -112,7 +112,7 @@ export function SuperAdmin() {
         <label>
           Cobrança
           <select name="tipo">
-            <option value="avulso">Avulso</option>
+            <option value="avulso">Diarista</option>
             <option value="mensalista">Mensalista</option>
           </select>
         </label>
@@ -227,7 +227,7 @@ export function SuperAdmin() {
                       onClick={() =>
                         void run(
                           () => createPlayerForUser(profile.id),
-                          "Jogador avulso de linha criado e vinculado.",
+                          "Jogador diarista de linha criado e vinculado.",
                         )
                       }
                     >

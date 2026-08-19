@@ -128,7 +128,7 @@ export function GameManager() {
                     </button>
                   )}
                   {item.status === "espera" && item.player?.tipo === "avulso" && game?.fase_lista !== "geral" ? (
-                    <button disabled>Aguarda avulsos</button>
+                    <button disabled>Aguarda diaristas</button>
                   ) : item.status === "espera" && (
                     <button
                       onClick={() =>
@@ -139,19 +139,6 @@ export function GameManager() {
                       }
                     >
                       Promover
-                    </button>
-                  )}
-                  {["confirmado", "presente"].includes(item.status) && item.categoria === "linha" && (
-                    <button
-                      className="secondary"
-                      onClick={() =>
-                        run(
-                          () => adminParticipantById(item.id, "demote"),
-                          "Jogador movido para suplentes.",
-                        )
-                      }
-                    >
-                      Suplente
                     </button>
                   )}
                   <button
@@ -212,7 +199,7 @@ export function GameManager() {
                   const entry = active.find((item) => item.jogador_id === player.id);
                   return (
                     <option key={player.id} value={player.id} disabled={Boolean(entry)}>
-                      {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Avulso"}{entry ? ` • ${labels[entry.status] || entry.status}` : ""}
+                      {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Diarista"}{entry ? ` • ${labels[entry.status] || entry.status}` : ""}
                     </option>
                   );
                 })}

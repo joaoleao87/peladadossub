@@ -76,14 +76,14 @@ export function PlayerManager() {
       <div className="player-summary">
         <div><b>{players.length}</b><span>Jogadores</span></div>
         <div><b>{players.filter((player) => player.tipo === "mensalista").length}</b><span>Mensalistas</span></div>
-        <div><b>{players.filter((player) => player.tipo === "avulso").length}</b><span>Avulsos</span></div>
+        <div><b>{players.filter((player) => player.tipo === "avulso").length}</b><span>Diaristas</span></div>
         <div><b>{players.filter((player) => player.posicao === "goleiro").length}</b><span>Goleiros</span></div>
       </div>
       <header>
         <small>ENTENDA OS CAMPOS</small>
         <p>
           <b>Conta de acesso</b> liga o jogador ao login dele.{" "}
-          <b>Tipo de cobrança</b> define mensalista ou avulso. <b>Posição</b>{" "}
+          <b>Tipo de cobrança</b> define mensalista ou diarista. <b>Posição</b>{" "}
           define linha ou goleiro. <b>Equilíbrio</b> é a nota do admin para o
           sorteio.
         </p>
@@ -100,7 +100,7 @@ export function PlayerManager() {
             <div>
               <label>
                 <input type="radio" name="tipo" value="avulso" defaultChecked />
-                Avulso
+                Diarista
               </label>
               <label>
                 <input type="radio" name="tipo" value="mensalista" />
@@ -231,7 +231,7 @@ export function PlayerManager() {
                             )
                           }
                         />
-                        {tipo === "mensalista" ? "Mensalista" : "Avulso"}
+                        {tipo === "mensalista" ? "Mensalista" : "Diarista"}
                       </label>
                     ))}
                   </div>

@@ -13,6 +13,7 @@ import {
   peladasHistory,
   setParticipantGoals,
   setListPhase,
+  startPelada,
   respondPelada,
   voteMatchAward,
 } from "../lib/api";
@@ -230,11 +231,8 @@ export function ListPage() {
               </div>
               <span className="player-name">
                 {name}
-                {isAdmin && item.player?.nome && item.player.nome !== name && (
+                {isAdmin && item.player?.nome && (
                   <small className="player-record-name">Jogador: {item.player.nome}</small>
-                )}
-                {isAdmin && (item.player?.user_id || item.user_id) && (
-                  <small className="player-linked-account">CONTA VINCULADA</small>
                 )}
                 {isMine(item) && <small className="player-me">VOCÊ</small>}
               </span>
@@ -284,7 +282,13 @@ export function ListPage() {
                         </button>
                       </span>
                     )}
-                  {isAdmin && !started && (
+                  {isAdmin && game.pelada_iniciada && ["confirmado", "presente", "espera"].includes(item.status) && (
+                    <>
+                      <button type="button" className={`mini ${item.comparecimento ? "" : "secondary"}`} onClick={() => void run(() => adminParticipantById(item.id, "presente"), "Presença registrada.")}>Presente</button>
+                      <button type="button" className="mini danger" onClick={() => void run(() => adminParticipantById(item.id, "faltou"), "Falta registrada e vaga repassada.")}>Falta</button>
+                    </>
+                  )}
+                  {isAdmin && !game.pelada_iniciada && (
                     <>
                       {item.status === "aguardando_resposta" && (
                         <button
@@ -301,7 +305,7 @@ export function ListPage() {
                         </button>
                       )}
                       {item.status === "espera" && item.player?.tipo === "avulso" && phase !== "geral" ? (
-                        <button type="button" className="mini" disabled>Aguarda avulsos</button>
+                        <button type="button" className="mini" disabled>Aguarda diaristas</button>
                       ) : item.status === "espera" && (
                         <button
                           type="button"
@@ -314,20 +318,6 @@ export function ListPage() {
                           }
                         >
                           Promover
-                        </button>
-                      )}
-                      {["confirmado", "presente"].includes(item.status) && item.categoria === "linha" && (
-                        <button
-                          type="button"
-                          className="mini secondary"
-                          onClick={() =>
-                            void run(
-                              () => adminParticipantById(item.id, "demote"),
-                              "Jogador movido para suplentes.",
-                            )
-                          }
-                        >
-                          Suplente
                         </button>
                       )}
                       <button
@@ -358,7 +348,7 @@ export function ListPage() {
             <b>Controle da lista</b>
             <small>
               {game.fase_lista === "geral"
-                ? "Avulsos liberados"
+                ? "Diaristas liberados"
                 : game.fase_lista === "mensalistas"
                   ? "Somente mensalistas"
                   : "Lista fechada"}
@@ -392,11 +382,11 @@ export function ListPage() {
               onClick={() =>
                 void run(
                   () => setListPhase(game.id, "geral"),
-                  "Lista liberada para avulsos.",
+                  "Lista liberada para diaristas.",
                 )
               }
             >
-              Avulsos
+              Diaristas
             </button>
           </div>
           <form className="queue-player" onSubmit={addPlayer}>
@@ -408,7 +398,7 @@ export function ListPage() {
                 const entry = current.find((item) => item.jogador_id === player.id);
                 return (
                   <option key={player.id} value={player.id} disabled={Boolean(entry)}>
-                    {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Avulso"}{entry ? ` • ${statusLabel[entry.status] || entry.status}` : ""}
+                    {player.apelido || player.nome} • {player.tipo === "mensalista" ? "Mensalista" : "Diarista"}{entry ? ` • ${statusLabel[entry.status] || entry.status}` : ""}
                   </option>
                 );
               })}
@@ -419,7 +409,10 @@ export function ListPage() {
             Compartilhar lista no WhatsApp
           </button>
           {game.fase_lista !== "geral" && (
-            <small>Avulsos adicionados agora ficam em espera.</small>
+            <small>Diaristas adicionados agora ficam em espera.</small>
+          )}
+          {!game.pelada_iniciada && (
+            <button type="button" className="start-game" onClick={() => confirm("Iniciar a pelada e fechar a lista?") && void run(() => startPelada(game.id), "Pelada iniciada. Presença e falta liberadas.")}>INICIAR PELADA</button>
           )}
         </section>
       )}

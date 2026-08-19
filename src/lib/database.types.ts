@@ -62,6 +62,7 @@ export interface Pelada {
   lista_automatica: boolean;
   motivo_cancelamento?: string | null;
   sorteio_liberado?: boolean;
+  pelada_iniciada?: boolean;
 }
 export interface TeamMember {
   pelada_id: string;
@@ -95,6 +96,7 @@ export interface Participant {
   status: ParticipantStatus;
   categoria: ListPosition;
   gols?: number;
+  comparecimento?: boolean | null;
   profile?: Profile;
   player?: Player;
 }

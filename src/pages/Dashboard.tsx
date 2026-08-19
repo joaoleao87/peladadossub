@@ -6,6 +6,7 @@ import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
   allPlayers,
+  homeStats,
   leavePelada,
   myLinkRequest,
   myPlayer,
@@ -46,7 +47,7 @@ function HomeTutorial({
         <ol>
           <li>
             <b>Entre na lista.</b> Mensalistas confirmam quando a fase deles
-            abrir. Avulsos entram quando o admin liberar a lista geral.
+            abrir. Diaristas entram quando o admin liberar a lista geral.
           </li>
           <li>
             <b>Acompanhe sua posição.</b> Veja confirmados, goleiros e
@@ -89,10 +90,10 @@ function HomeTutorial({
             </li>
             <li>
               <b>Organize os jogadores.</b> Vincule contas, defina mensalista ou
-              avulso, posição e isenção na aba Jogadores.
+              diarista, posição e isenção na aba Jogadores.
             </li>
             <li>
-              <b>Controle a lista.</b> Na Lista, libere mensalistas ou avulsos,
+              <b>Controle a lista.</b> Na Lista, libere mensalistas ou diaristas,
               adicione nomes e mova jogadores entre confirmados e suplentes.
             </li>
             <li>
@@ -124,10 +125,11 @@ function HomeTutorial({
 }
 
 export function Dashboard() {
-  const { profile } = useAuth(),
+  const { profile, preview } = useAuth(),
     isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     state = useLoad(async () => {
-      const [game, player] = await Promise.all([nextPelada(), myPlayer()]),
+      const [game, loadedPlayer, stats] = await Promise.all([nextPelada(), myPlayer(),homeStats(profile!.id)]),
+        player=preview==='sem_vinculo'?null:loadedPlayer,
         [list, players, request, requests] = await Promise.all([
           game ? participants(game.id) : [],
           player ? Promise.resolve([]) : allPlayers(),
@@ -141,8 +143,9 @@ export function Dashboard() {
         players: players.filter((item) => !item.user_id),
         request,
         requests,
+        stats,
       };
-    }, [profile?.id, profile?.role]),
+    }, [profile?.id, profile?.role, preview]),
     [toast, setToast] = useState(""),
     [busy, setBusy] = useState(false),
     [linkChoice, setLinkChoice] = useState("new");
@@ -180,7 +183,7 @@ export function Dashboard() {
         <>
           <p>Escolha seu nome na lista ou solicite a criação de um jogador.</p>
           <select value={linkChoice} onChange={(e) => setLinkChoice(e.target.value)}>
-            <option value="new">Criar novo jogador (avulso • linha)</option>
+            <option value="new">Criar novo jogador (diarista • linha)</option>
             {state.data?.players.map((item) => (
               <option value={item.id} key={item.id}>{item.apelido || item.nome}</option>
             ))}
@@ -200,7 +203,7 @@ export function Dashboard() {
         <div className="link-request-row" key={request.id}>
           <span>
             <b>{request.profile?.apelido || request.profile?.nome}</b>
-            <small>{request.player ? `Vincular a ${request.player.apelido || request.player.nome}` : "Criar jogador avulso • linha"}</small>
+            <small>{request.player ? `Vincular a ${request.player.apelido || request.player.nome}` : "Criar jogador diarista • linha"}</small>
           </span>
           <div>
             <button className="mini" disabled={busy} onClick={() => void linkAction(() => reviewLinkRequest(request.id, true), "Solicitação aprovada.")}>Aprovar</button>
@@ -217,6 +220,7 @@ export function Dashboard() {
           BEM-VINDO, {profile?.apelido || profile?.nome}
         </p>
         <h1>Próxima pelada</h1>
+        <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
         {linkPanel}
         {adminRequests}
         <Empty title="Nenhuma pelada marcada">
@@ -351,6 +355,7 @@ export function Dashboard() {
     <section>
       <p className="eyebrow">BEM-VINDO, {profile?.apelido || profile?.nome}</p>
       <h1>Próxima pelada</h1>
+      <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
       {linkPanel}
       {adminRequests}
       <article className="game-card">
