@@ -88,7 +88,11 @@ export function ListPage() {
     ),
     keepers = confirmed.filter((item) => item.categoria === "goleiro"),
     pending = current.filter((item) => item.status === "aguardando_resposta"),
-    mine = current.find((item) => item.jogador_id === state.data?.ownPlayer?.id),
+    isMine = (item: Participant) =>
+      item.jogador_id === state.data?.ownPlayer?.id ||
+      item.user_id === profile?.id ||
+      item.player?.user_id === profile?.id,
+    mine = current.find(isMine),
     started =
       new Date(`${game.data}T${game.horario}`).getTime() <= Date.now(),
     canSeeList =
@@ -103,8 +107,8 @@ export function ListPage() {
         (phase === "mensalistas" && profile?.mensalista_ativo)),
     canVote =
       started &&
-      confirmed.some((item) => item.player?.user_id === profile?.id),
-    voteTargets = confirmed.filter((item) => item.player?.user_id !== profile?.id),
+      confirmed.some(isMine),
+    voteTargets = confirmed.filter((item) => !isMine(item)),
     myVotes = voting.data ?? { votes: {} };
   async function run(action: () => Promise<unknown>, message: string) {
     try {
@@ -212,7 +216,7 @@ export function ListPage() {
               className={`player ${
                 isAdmin ? "interactive-player" : ""
               } ${
-                item.player?.user_id === profile?.id ? "me" : ""
+                 isMine(item) ? "me" : ""
               }`}
               key={item.id}
             >
@@ -229,7 +233,7 @@ export function ListPage() {
                 {isAdmin && item.player?.nome && item.player.nome !== name && (
                   <small className="player-record-name">Jogador: {item.player.nome}</small>
                 )}
-                {item.player?.user_id === profile?.id && <small className="player-me">VOCÊ</small>}
+                {isMine(item) && <small className="player-me">VOCÊ</small>}
               </span>
               {isAdmin && (
                 <nav
@@ -456,12 +460,14 @@ export function ListPage() {
             </div>
           </section>
         )}
-      <div className="list-summary">
-        <div><b>{line.length}</b><span>Confirmados</span></div>
-        <div><b>{waiting.length}</b><span>Suplentes</span></div>
-        <div><b>{keepers.length}</b><span>Goleiros</span></div>
-        {isAdmin && <div><b>{pending.length}</b><span>Aguardando</span></div>}
-      </div>
+      {isAdmin && (
+        <div className="list-summary">
+          <div><b>{line.length}</b><span>Confirmados</span></div>
+          <div><b>{waiting.length}</b><span>Suplentes</span></div>
+          <div><b>{keepers.length}</b><span>Goleiros</span></div>
+          <div><b>{pending.length}</b><span>Aguardando</span></div>
+        </div>
+      )}
       {started && canVote && (
         <p className="voting-notice voting-ready">
           <b>Como votar:</b> escolha destaque, surpresa e destaque negativo no

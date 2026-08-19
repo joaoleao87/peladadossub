@@ -162,7 +162,12 @@ export function Dashboard() {
         ["confirmado", "presente"].includes(p.status) &&
         p.categoria !== "goleiro",
     ),
-    mine = list.find((p) => p.jogador_id === player?.id),
+    mine = list.find(
+      (p) =>
+        p.jogador_id === player?.id ||
+        p.user_id === profile?.id ||
+        p.player?.user_id === profile?.id,
+    ),
     waiting = list.filter((p) => p.status === "espera"),
     spots = Math.max(0, 20 - confirmed.length),
     position =

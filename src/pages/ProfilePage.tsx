@@ -11,6 +11,7 @@ import {
   uploadAvatar,
 } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import "./profile-page.css";
 
 export function ProfilePage() {
   const { profile, refreshProfile } = useAuth(),
@@ -23,7 +24,8 @@ export function ProfilePage() {
     ),
     [toast, setToast] = useState(""),
     [photo, setPhoto] = useState<File | null>(null),
-    [preview, setPreview] = useState("");
+    [preview, setPreview] = useState(""),
+    [removePhoto, setRemovePhoto] = useState(false);
   if (!profile || state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
@@ -35,7 +37,11 @@ export function ProfilePage() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     try {
-      const foto_url = photo ? await uploadAvatar(photo) : profile!.foto_url;
+      const foto_url = photo
+        ? await uploadAvatar(photo)
+        : removePhoto
+          ? null
+          : profile!.foto_url;
       await updateOwnProfile({
         nome: String(f.get("nome")),
         apelido: String(f.get("apelido") || "") || null,
@@ -45,6 +51,7 @@ export function ProfilePage() {
       await refreshProfile();
       setPhoto(null);
       setPreview("");
+      setRemovePhoto(false);
       setToast("Cadastro atualizado.");
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Falha ao atualizar.");
@@ -52,31 +59,29 @@ export function ProfilePage() {
       setTimeout(() => setToast(""), 3500);
     }
   }
-  const image = preview || profile.foto_url;
+  const image = removePhoto ? "" : preview || profile.foto_url;
   return (
     <section>
       <div className="profile-head">
-        <div
-          className="profile-avatar"
-          style={{ position: "relative", cursor: "pointer" }}
-        >
-          {image ? (
-            <img src={image} alt="" />
-          ) : (
-            (profile.apelido || profile.nome)[0]
-          )}
+        <div className="profile-photo-editor">
+          <label className="profile-photo-picker">
+            <span className="profile-avatar">
+              {image ? (
+                <img src={image} alt="Foto do perfil" />
+              ) : (
+                (profile.apelido || profile.nome)[0]
+              )}
+              <span className="profile-photo-overlay">
+                {image ? "ALTERAR" : "ADICIONAR"}
+              </span>
+            </span>
+            <strong>{image ? "Alterar foto" : "Adicionar foto"}</strong>
+            <small>Toque para escolher uma imagem</small>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            aria-label="Alterar foto do perfil"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              opacity: 0,
-              cursor: "pointer",
-            }}
+            aria-label={image ? "Alterar foto do perfil" : "Adicionar foto do perfil"}
+            onClick={(e) => (e.currentTarget.value = "")}
             onChange={(e) => {
               const file = e.target.files?.[0] || null;
               if (file?.size && file.size > 5 * 1024 * 1024) {
@@ -86,8 +91,28 @@ export function ProfilePage() {
               }
               setPhoto(file);
               setPreview(file ? URL.createObjectURL(file) : "");
+              setRemovePhoto(false);
             }}
           />
+          </label>
+          {image && (
+            <button
+              type="button"
+              className="profile-photo-remove"
+              onClick={() => {
+                setPhoto(null);
+                setPreview("");
+                setRemovePhoto(true);
+              }}
+            >
+              Remover foto
+            </button>
+          )}
+          {(photo || removePhoto) && (
+            <small className="profile-photo-pending">
+              {removePhoto ? "A foto será removida" : "Nova foto selecionada"}. Salve o cadastro para confirmar.
+            </small>
+          )}
         </div>
         <h1>{profile.apelido || profile.nome}</h1>
         <p>{profile.nome}</p>
@@ -118,7 +143,6 @@ export function ProfilePage() {
           <span>Destaques</span>
         </div>
       </div>
-      <MyPayments />
       <form className="panel form-grid" onSubmit={submit}>
         <h2>Meu cadastro</h2>
         <label>
@@ -140,6 +164,7 @@ export function ProfilePage() {
         </label>
         <button className="wide">SALVAR CADASTRO</button>
       </form>
+      <MyPayments />
       <button
         className="secondary full"
         onClick={() => supabase.auth.signOut()}
