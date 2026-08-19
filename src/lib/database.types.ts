@@ -130,6 +130,22 @@ export interface RankingStats {
   votos_surpresa: number;
   votos_negativo: number;
 }
+export interface MatchAwardResult {
+  categoria: VoteCategory;
+  jogador_id: string;
+  nome: string;
+  apelido: string | null;
+  votos: number;
+}
+export interface LinkRequest {
+  id: string;
+  user_id: string;
+  jogador_id: string | null;
+  status: "pendente" | "aprovada" | "rejeitada";
+  created_at: string;
+  profile?: Profile;
+  player?: Player | null;
+}
 export interface ExpenseInstallment {
   id: string;
   despesa_id: string;

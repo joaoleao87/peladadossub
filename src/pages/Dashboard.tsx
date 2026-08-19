@@ -5,12 +5,18 @@ import { ArrowRight, MapPin, Users } from "../components/Icons";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
+  allPlayers,
   leavePelada,
+  myLinkRequest,
   myPlayer,
   nextPelada,
+  pendingLinkRequests,
   participants,
+  requestPlayerLink,
   respondPelada,
+  reviewLinkRequest,
 } from "../lib/api";
+import "./dashboard.css";
 
 function HomeTutorial({
   isAdmin,
@@ -52,7 +58,7 @@ function HomeTutorial({
           </li>
           <li>
             <b>Vote depois do jogo.</b> Quem participou escolhe o destaque, a
-            surpresa e o destaque negativo da última pelada.
+            surpresa e quem quebrou mais na última pelada.
           </li>
           <li>
             <b>Consulte seus dados.</b> Ranking mostra resultados agrupados; no
@@ -119,22 +125,32 @@ function HomeTutorial({
 
 export function Dashboard() {
   const { profile } = useAuth(),
+    isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     state = useLoad(async () => {
-      const game = await nextPelada(),
-        [list, player] = await Promise.all([
+      const [game, player] = await Promise.all([nextPelada(), myPlayer()]),
+        [list, players, request, requests] = await Promise.all([
           game ? participants(game.id) : [],
-          myPlayer(),
+          player ? Promise.resolve([]) : allPlayers(),
+          player ? Promise.resolve(null) : myLinkRequest(),
+          isAdmin ? pendingLinkRequests() : Promise.resolve([]),
         ]);
-      return { game, list, player };
-    }),
+      return {
+        game,
+        list,
+        player,
+        players: players.filter((item) => !item.user_id),
+        request,
+        requests,
+      };
+    }, [profile?.id, profile?.role]),
     [toast, setToast] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [linkChoice, setLinkChoice] = useState("new");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
   const game = state.data?.game,
     player = state.data?.player,
-    isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     tutorial = (
       <HomeTutorial
         isAdmin={isAdmin}
@@ -142,6 +158,58 @@ export function Dashboard() {
         linked={Boolean(player)}
       />
     );
+  async function linkAction(action: () => Promise<unknown>, message: string) {
+    setBusy(true);
+    try {
+      await action();
+      setToast(message);
+      await state.reload();
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Não foi possível concluir.");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setToast(""), 3500);
+    }
+  }
+  const linkPanel = !player && (
+    <section className="panel link-request-panel">
+      <h2>Vincular minha conta</h2>
+      {state.data?.request ? (
+        <p>Seu pedido está aguardando a análise de um administrador.</p>
+      ) : (
+        <>
+          <p>Escolha seu nome na lista ou solicite a criação de um jogador.</p>
+          <select value={linkChoice} onChange={(e) => setLinkChoice(e.target.value)}>
+            <option value="new">Criar novo jogador (avulso • linha)</option>
+            {state.data?.players.map((item) => (
+              <option value={item.id} key={item.id}>{item.apelido || item.nome}</option>
+            ))}
+          </select>
+          <button disabled={busy} onClick={() => void linkAction(
+            () => requestPlayerLink(linkChoice === "new" ? null : linkChoice),
+            "Solicitação enviada.",
+          )}>SOLICITAR VÍNCULO</button>
+        </>
+      )}
+    </section>
+  );
+  const adminRequests = isAdmin && Boolean(state.data?.requests.length) && (
+    <section className="panel link-request-panel">
+      <h2>Pedidos de vínculo</h2>
+      {state.data!.requests.map((request) => (
+        <div className="link-request-row" key={request.id}>
+          <span>
+            <b>{request.profile?.apelido || request.profile?.nome}</b>
+            <small>{request.player ? `Vincular a ${request.player.apelido || request.player.nome}` : "Criar jogador avulso • linha"}</small>
+          </span>
+          <div>
+            <button className="mini" disabled={busy} onClick={() => void linkAction(() => reviewLinkRequest(request.id, true), "Solicitação aprovada.")}>Aprovar</button>
+            <button className="mini danger" disabled={busy} onClick={() => void linkAction(() => reviewLinkRequest(request.id, false), "Solicitação rejeitada.")}>Rejeitar</button>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
   if (!game)
     return (
       <section>
@@ -149,6 +217,8 @@ export function Dashboard() {
           BEM-VINDO, {profile?.apelido || profile?.nome}
         </p>
         <h1>Próxima pelada</h1>
+        {linkPanel}
+        {adminRequests}
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
         </Empty>
@@ -281,6 +351,8 @@ export function Dashboard() {
     <section>
       <p className="eyebrow">BEM-VINDO, {profile?.apelido || profile?.nome}</p>
       <h1>Próxima pelada</h1>
+      {linkPanel}
+      {adminRequests}
       <article className="game-card">
         <div className="game-card-top">
           <Badge>

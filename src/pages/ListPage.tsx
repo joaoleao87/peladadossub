@@ -473,7 +473,7 @@ export function ListPage() {
       )}
       {started && canVote && (
         <p className="voting-notice voting-ready">
-          <b>Como votar:</b> escolha destaque, surpresa e destaque negativo no
+          <b>Como votar:</b> escolha destaque, surpresa e quem quebrou mais no
           final da lista.
         </p>
       )}
@@ -487,14 +487,14 @@ export function ListPage() {
       {started && canVote && (
         <section className="match-voting-panel">
           <p className="eyebrow">VOTAÇÃO DA PELADA</p>
-          <h2>Escolha os destaques</h2>
+          <h2>Vote por categoria</h2>
           <small>Você pode alterar seus votos quando quiser.</small>
           <div>
             {(
               [
                 ["destaque", "Destaque"],
                 ["surpresa", "Surpresa"],
-                ["negativo", "Destaque negativo"],
+                ["negativo", "Quem quebrou mais"],
               ] as [VoteCategory, string][]
             ).map(([category, label]) => (
               <label key={category}>

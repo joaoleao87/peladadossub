@@ -4,6 +4,7 @@ import { useLoad } from "../hooks/useLoad";
 import {
   allPlayers,
   allProfiles,
+  createPlayerForUser,
   createUser,
   manageUser,
   resetUserPassword,
@@ -220,6 +221,19 @@ export function SuperAdmin() {
                       O vínculo sincroniza cobrança e posição com o jogador.
                     </small>
                   </label>
+                  {!player && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void run(
+                          () => createPlayerForUser(profile.id),
+                          "Jogador avulso de linha criado e vinculado.",
+                        )
+                      }
+                    >
+                      Criar jogador para esta conta
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="secondary user-password"

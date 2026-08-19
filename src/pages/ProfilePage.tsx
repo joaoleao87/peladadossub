@@ -149,7 +149,7 @@ export function ProfilePage() {
         </div>
         <div>
           <strong>{performance?.votos_destaque ?? 0}</strong>
-          <span>Destaques</span>
+          <span>Destaque</span>
         </div>
       </div>
       <form className="panel form-grid" onSubmit={submit}>
