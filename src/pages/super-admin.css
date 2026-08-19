@@ -10,6 +10,7 @@
 .users-panel h2 {
   margin-bottom: 6px;
 }
+.user-search{width:100%;min-height:44px;padding:10px 12px;background:#0d0f0c;color:#fff;border:1px solid #41453b;border-radius:8px}.user-filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 5px}.user-filters button{min-height:34px;padding:7px 11px;background:#20221d;color:#aaa;border-radius:18px;white-space:nowrap;font:700 10px Inter}.user-filters button.active{background:var(--yellow);color:#111}.filter-result{color:var(--muted);font-size:10px}
 .user-card {
   background: #10120f;
   border: 1px solid #30332b;

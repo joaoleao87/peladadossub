@@ -23,6 +23,16 @@ const roles: { value: Role; label: string }[] = [
   { value: "admin", label: "Admin" },
   { value: "superadmin", label: "Superadmin" },
 ];
+type UserFilter = "todos" | "sem_vinculo" | Role | PlayerType;
+const filters: { value: UserFilter; label: string }[] = [
+  { value: "todos", label: "Todos" },
+  { value: "sem_vinculo", label: "Sem vínculo" },
+  { value: "user", label: "Usuários" },
+  { value: "admin", label: "Admins" },
+  { value: "superadmin", label: "Superadmins" },
+  { value: "mensalista", label: "Mensalistas" },
+  { value: "avulso", label: "Diaristas" },
+];
 
 export function SuperAdmin() {
   const { preview, setPreview } = useAuth(),
@@ -34,7 +44,9 @@ export function SuperAdmin() {
       return { profiles, players };
     }),
     [toast, setToast] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [filter, setFilter] = useState<UserFilter>("todos"),
+    [search, setSearch] = useState("");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
@@ -82,6 +94,14 @@ export function SuperAdmin() {
   }
   const linkedPlayer = (profile: Profile) =>
     players.find((player) => player.user_id === profile.id);
+  const query = search.trim().toLocaleLowerCase(),
+    filteredProfiles = profiles.filter((profile) => {
+      const player = linkedPlayer(profile),
+        matchesFilter = filter === "todos" ||
+          (filter === "sem_vinculo" ? !player : ["user", "admin", "superadmin"].includes(filter) ? profile.role === filter : player?.tipo === filter),
+        matchesSearch = !query || [profile.nome, profile.apelido, player?.nome, player?.apelido].some((value) => value?.toLocaleLowerCase().includes(query));
+      return matchesFilter && matchesSearch;
+    });
 
   return (
     <section>
@@ -140,8 +160,13 @@ export function SuperAdmin() {
       </form>
       <section className="users-panel">
         <h2>Usuários</h2>
-        {profiles.length ? (
-          profiles.map((profile) => {
+        <input className="user-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuário ou jogador…" aria-label="Buscar usuário ou jogador" />
+        <nav className="user-filters" aria-label="Filtros de usuários">
+          {filters.map((item) => <button type="button" className={filter === item.value ? "active" : ""} onClick={() => setFilter(item.value)} key={item.value}>{item.label}</button>)}
+        </nav>
+        <small className="filter-result">{filteredProfiles.length} de {profiles.length} contas</small>
+        {filteredProfiles.length ? (
+          filteredProfiles.map((profile) => {
             const player = linkedPlayer(profile);
             return (
               <details className="user-card" key={profile.id}>
@@ -257,7 +282,7 @@ export function SuperAdmin() {
             );
           })
         ) : (
-          <Empty title="Nenhum usuário" />
+          <Empty title="Nenhuma conta encontrada">Tente outro nome ou filtro.</Empty>
         )}
       </section>
       <Toast message={toast} />
