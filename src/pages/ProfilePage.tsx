@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { LogOut } from "../components/Icons";
 import { MyPayments } from "../components/MyPayments";
@@ -121,6 +122,11 @@ export function ProfilePage() {
         <small>A categoria e a posição são definidas pela administração.</small>
         <button>SALVAR ALTERAÇÕES</button>
       </form>
+      <section className="panel profile-install">
+        <span aria-hidden="true">📲</span>
+        <div><h2>Instalar aplicativo</h2><p>Adicione o Pelada dos Sub à tela inicial do celular para acessar mais rápido.</p></div>
+        <Link to="/instalar">VER INSTRUÇÕES DE INSTALAÇÃO</Link>
+      </section>
       <MyPayments />
       <button
         className="secondary full"
