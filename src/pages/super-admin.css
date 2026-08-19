@@ -1,3 +1,4 @@
+.preview-settings{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;padding:16px;background:var(--panel);border:1px solid #2e302a;border-radius:12px}.preview-settings span{display:grid;gap:4px}.preview-settings small{color:var(--muted);font-size:10px}.preview-settings select{min-width:150px;padding:10px;background:#0d0f0c;color:#fff;border:1px solid #41453b}@media(max-width:520px){.preview-settings{align-items:stretch;flex-direction:column}.preview-settings select{width:100%}}
 .users-panel {
   display: grid;
   gap: 8px;

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useAuth, type PreviewMode } from "../auth/AuthContext";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -24,7 +25,8 @@ const roles: { value: Role; label: string }[] = [
 ];
 
 export function SuperAdmin() {
-  const state = useLoad(async () => {
+  const { preview, setPreview } = useAuth(),
+    state = useLoad(async () => {
       const [profiles, players] = await Promise.all([
         allProfiles(),
         allPlayers(),
@@ -85,6 +87,15 @@ export function SuperAdmin() {
     <section>
       <p className="eyebrow">CONTROLE DE ACESSO</p>
       <h1>Superadmin</h1>
+      <section className="preview-settings">
+        <span><b>Visualização do aplicativo</b><small>Confira a experiência de cada tipo de usuário.</small></span>
+        <select value={preview ?? ""} onChange={(event) => setPreview((event.target.value || null) as PreviewMode)}>
+          <option value="">Superadmin</option>
+          <option value="mensalista">Mensalista</option>
+          <option value="diarista">Diarista</option>
+          <option value="sem_vinculo">Conta sem vínculo</option>
+        </select>
+      </section>
       <form className="panel form-grid" onSubmit={submit}>
         <h2>Criar usuário</h2>
         <label>
