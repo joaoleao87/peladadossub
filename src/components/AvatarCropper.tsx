@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CROP_SIZE, cropGeometry } from "../lib/imageCrop";
 
-type Props = { src: string; onCancel: () => void; onConfirm: (file: File) => void };
+type Props = { src: string; onCancel: () => void; onConfirm: (file: File) => void | Promise<void> };
 
 export function AvatarCropper({ src, onCancel, onConfirm }: Props) {
   const [dimensions, setDimensions] = useState({ width: 1, height: 1 }),
@@ -43,7 +43,7 @@ export function AvatarCropper({ src, onCancel, onConfirm }: Props) {
       if (!context) throw new Error("Editor de imagem indisponível.");
       context.drawImage(image, geometry.sourceX, geometry.sourceY, geometry.sourceSize, geometry.sourceSize, 0, 0, 512, 512);
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Não foi possível cortar a foto.")), "image/jpeg", 0.9));
-      onConfirm(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
+      await onConfirm(new File([blob], "avatar.jpg", { type: "image/jpeg" }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível ajustar a foto.");
     } finally {

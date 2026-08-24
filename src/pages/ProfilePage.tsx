@@ -15,30 +15,19 @@ import "./profile-page.css";
 export function ProfilePage() {
   const { profile, refreshProfile } = useAuth(),
     [toast, setToast] = useState(""),
-    [photo, setPhoto] = useState<File | null>(null),
-    [preview, setPreview] = useState(""),
     [cropSource, setCropSource] = useState(""),
-    [removePhoto, setRemovePhoto] = useState(false);
+    [photoBusy, setPhotoBusy] = useState(false);
   if (!profile) return <Spinner />;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     try {
-      const foto_url = photo
-        ? await uploadAvatar(photo)
-        : removePhoto
-          ? null
-          : profile!.foto_url;
       await updateOwnProfile({
         nome: String(f.get("nome")),
         apelido: String(f.get("apelido") || "") || null,
         telefone: String(f.get("telefone") || "") || null,
-        foto_url,
       });
       await refreshProfile();
-      setPhoto(null);
-      setPreview("");
-      setRemovePhoto(false);
       setToast("Cadastro atualizado.");
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Falha ao atualizar.");
@@ -46,7 +35,20 @@ export function ProfilePage() {
       setTimeout(() => setToast(""), 3500);
     }
   }
-  const image = removePhoto ? "" : preview || profile.foto_url,
+  async function removeAvatar() {
+    setPhotoBusy(true);
+    try {
+      await updateOwnProfile({ foto_url: null });
+      await refreshProfile();
+      setToast("Foto removida e cadastro atualizado.");
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Falha ao remover a foto.");
+    } finally {
+      setPhotoBusy(false);
+      setTimeout(() => setToast(""), 3500);
+    }
+  }
+  const image = profile.foto_url,
     displayName = profile.apelido || profile.nome,
     secondaryName = profile.nome;
   return (
@@ -79,17 +81,12 @@ export function ProfilePage() {
                 e.target.value = "";
                 return;
               }
-              if(file){setCropSource(URL.createObjectURL(file));setRemovePhoto(false)}
+              if(file)setCropSource(URL.createObjectURL(file));
             }}
           />
           </label>
           {image && (
-            <div className="profile-photo-actions"><button type="button" onClick={()=>setCropSource(image)}>Ajustar foto</button><button type="button" className="profile-photo-remove" onClick={() => {setPhoto(null);setPreview("");setRemovePhoto(true)}}>Remover foto</button></div>
-          )}
-          {(photo || removePhoto) && (
-            <small className="profile-photo-pending">
-              {removePhoto ? "A foto será removida" : "Nova foto selecionada"}. Salve o cadastro para confirmar.
-            </small>
+            <div className="profile-photo-actions"><button type="button" disabled={photoBusy} onClick={()=>setCropSource(image)}>Ajustar foto</button><button type="button" disabled={photoBusy} className="profile-photo-remove" onClick={() => void removeAvatar()}>{photoBusy ? "Removendo…" : "Remover foto"}</button></div>
           )}
         </div>
         <div className="profile-identity">
@@ -135,7 +132,7 @@ export function ProfilePage() {
         <LogOut /> SAIR DA CONTA
       </button>
       <Toast message={toast} />
-      {cropSource&&<AvatarCropper src={cropSource} onCancel={()=>{if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setCropSource('')}} onConfirm={file=>{if(preview.startsWith('blob:'))URL.revokeObjectURL(preview);if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setPhoto(file);setPreview(URL.createObjectURL(file));setCropSource('');setRemovePhoto(false)}}/>}
+      {cropSource&&<AvatarCropper src={cropSource} onCancel={()=>{if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setCropSource('')}} onConfirm={async file=>{const foto_url=await uploadAvatar(file);await updateOwnProfile({foto_url});await refreshProfile();if(cropSource.startsWith('blob:'))URL.revokeObjectURL(cropSource);setCropSource('');setToast("Foto atualizada no cadastro.");setTimeout(()=>setToast(""),3500)}}/>}
     </section>
   );
 }
