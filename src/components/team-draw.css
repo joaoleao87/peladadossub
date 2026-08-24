@@ -38,6 +38,7 @@
   border: 1px solid #30332b;
   border-radius: 9px;
 }
+.team-card.team-winner{border-color:var(--yellow);box-shadow:inset 0 0 0 1px #ffd50055}.winner-label{display:block;margin:-3px 0 9px;color:var(--yellow);font:800 10px Inter}.team-winner-button{width:100%;min-height:34px;margin:0 0 10px;padding:7px 9px;font-size:10px}
 .team-card-title {
   display: flex;
   align-items: center;

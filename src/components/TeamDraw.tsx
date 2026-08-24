@@ -5,6 +5,7 @@ import {
   generateTeamDraw,
   publishTeamDraw,
   removeTeamPlayer,
+  setWinningTeam,
 } from "../lib/api";
 import type { Participant, Pelada } from "../lib/database.types";
 import { Shield } from "./Icons";
@@ -118,8 +119,10 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
         <>
           <div className="teams-grid">
             {Array.from({ length: teamCount }, (_, index) => index + 1).map(
-              (team) => (
-                <section className="team-card" key={team}>
+              (team) => {
+                const winner=members.some(member=>member.time===team&&member.vencedor);
+                return (
+                <section className={`team-card ${winner?"team-winner":""}`} key={team}>
                   <div className="team-card-title">
                     <i>
                       <Shield />
@@ -129,6 +132,8 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
                       {members.filter((member) => member.time === team).length}/4
                     </small>
                   </div>
+                  {winner&&<b className="winner-label">VENCEDOR DA PELADA</b>}
+                  {isAdmin&&<button type="button" className={`team-winner-button ${winner?"secondary":""}`} onClick={()=>void run(()=>setWinningTeam(game.id,team,!winner),winner?"Vitória removida.":`Time ${team} marcado como vencedor.`)}>{winner?"Remover vitória":"Marcar vitória"}</button>}
                   <ol>
                     {members
                       .filter((member) => member.time === team)
@@ -169,7 +174,8 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
                       ))}
                   </ol>
                 </section>
-              ),
+                );
+              },
             )}
           </div>
           {isAdmin && unassigned.length > 0 && (
