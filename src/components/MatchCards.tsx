@@ -73,7 +73,7 @@ export function MatchCardsGallery({ game }: { game?: Pelada }) {
   useEffect(() => { if (!open) return; const close = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(null); }; addEventListener("keydown", close); history.pushState({ card: true }, ""); const pop = () => setOpen(null); addEventListener("popstate", pop, { once: true }); return () => removeEventListener("keydown", close); }, [open]);
   if (state.loading) return null; const cards = (state.data ?? []).filter(card => card.liberado); if (!cards.length) return null;
   return <section className="cards-gallery"><p className="eyebrow">CARDS DA PELADA</p><h2>Veja os vencedores</h2><div>{cards.map(card => <button key={card.id} onClick={() => setOpen(card)}>{card.titulo}<small>Visualizar card</small></button>)}</div>
-    {open && <aside className="card-viewer" role="dialog" aria-modal="true"><button aria-label="Fechar" onClick={() => { history.back(); setOpen(null); }}>×</button>{open.imagem_path ? <img src={matchCardImageUrl(open.imagem_path)} alt={open.titulo} /> : <MatchAwardCard card={open} game={game} />}</aside>}
+    {open && <aside className="card-viewer" role="dialog" aria-modal="true"><button className="card-viewer-close" aria-label="Fechar" onClick={() => { history.back(); setOpen(null); }}>×</button>{open.imagem_path ? <img src={matchCardImageUrl(open.imagem_path)} alt={open.titulo} /> : <MatchAwardCard card={open} game={game} />}<footer><button onClick={() => { history.back(); setOpen(null); }}>VOLTAR</button></footer></aside>}
   </section>;
 }
 
