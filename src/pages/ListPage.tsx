@@ -13,6 +13,7 @@ import {
   peladasHistory,
   replaceAbsent,
   setParticipantGoals,
+  setParticipantAssists,
   setListPhase,
   startPelada,
   respondPelada,
@@ -244,6 +245,7 @@ export function ListPage() {
                   {isAdmin &&
                     started &&
                     (["confirmado", "presente"].includes(item.status) || item.comparecimento) && (
+                      <>
                       <span className="goal-control">
                         <small>Gols</small>
                         <button
@@ -281,6 +283,13 @@ export function ListPage() {
                           +
                         </button>
                       </span>
+                      <span className="goal-control">
+                        <small>Assist.</small>
+                        <button type="button" className="mini secondary" disabled={(item.assistencias ?? 0) === 0} onClick={() => void run(() => setParticipantAssists(item.id, Math.max(0, (item.assistencias ?? 0) - 1)), "Assistência removida.")}>−</button>
+                        <b>{item.assistencias ?? 0}</b>
+                        <button type="button" className="mini" onClick={() => void run(() => setParticipantAssists(item.id, (item.assistencias ?? 0) + 1), "Assistência registrada.")}>+</button>
+                      </span>
+                      </>
                     )}
                   {isAdmin && game.pelada_iniciada && ["confirmado", "presente", "espera"].includes(item.status) && (
                     <>

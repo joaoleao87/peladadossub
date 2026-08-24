@@ -110,6 +110,7 @@ export interface Participant {
   status: ParticipantStatus;
   categoria: ListPosition;
   gols?: number;
+  assistencias?: number;
   comparecimento?: boolean | null;
   profile?: Profile;
   player?: Player;
