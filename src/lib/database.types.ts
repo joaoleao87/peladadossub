@@ -23,7 +23,7 @@ export type ParticipantStatus =
   | "faltou";
 export type PaymentStatus = "pendente" | "pago" | "isento" | "atrasado";
 export type VoteCategory = "destaque" | "surpresa" | "negativo";
-export type CardCategory = VoteCategory | "artilheiro";
+export type CardCategory = VoteCategory | "artilheiro" | "time_destaque";
 
 export interface Profile {
   id: string;
@@ -48,6 +48,7 @@ export interface MatchCard {
   snapshot_foto_url: string | null;
   snapshot_time: string | null;
   snapshot_gols: number;
+  snapshot_membros: { nome: string; foto_url: string | null }[];
   imagem_path: string | null;
   liberado: boolean;
 }
@@ -144,6 +145,7 @@ export interface RankingStats {
   apelido: string | null;
   jogos: number;
   gols: number;
+  assistencias: number;
   media_nota: number | null;
   total_avaliacoes: number;
   votos_destaque: number;

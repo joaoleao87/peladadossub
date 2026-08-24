@@ -108,11 +108,21 @@ export function Ranking() {
         <h2>Artilheiros por pelada</h2>
         {gameLists.some(({list})=>list.some(item=>(item.gols??0)>0)) ? gameLists.map(({game:itemGame,list:itemList})=>{const max=Math.max(0,...itemList.map(item=>item.gols??0)),leaders=itemList.filter(item=>(item.gols??0)===max&&max>0);if(!leaders.length)return null;return <div className="per-match-row" key={itemGame.id}><span><b>{leaders.map(playerName).join(" / ")}</b><small>{new Date(`${itemGame.data}T12:00`).toLocaleDateString("pt-BR")} • {itemGame.local}</small></span><strong>{max} {max===1?"gol":"gols"}</strong></div>}) : <Empty title="Ainda sem gols registrados" />}
       </section>
+      <section className="ranking-card per-match-scorers">
+        <h2>Assistentes por pelada</h2>
+        {gameLists.some(({list})=>list.some(item=>(item.assistencias??0)>0)) ? gameLists.map(({game:itemGame,list:itemList})=>{const max=Math.max(0,...itemList.map(item=>item.assistencias??0)),leaders=itemList.filter(item=>(item.assistencias??0)===max&&max>0);if(!leaders.length)return null;return <div className="per-match-row" key={itemGame.id}><span><b>{leaders.map(playerName).join(" / ")}</b><small>{new Date(`${itemGame.data}T12:00`).toLocaleDateString("pt-BR")} • {itemGame.local}</small></span><strong>{max} {max===1?"assistência":"assistências"}</strong></div>}) : <Empty title="Ainda sem assistências registradas" />}
+      </section>
       <div className="ranking-grid">
         {board(
           "Artilheiro",
           (row) => row.gols,
           (row) => `${row.gols} ${row.gols === 1 ? "gol" : "gols"}`,
+          (row) => `${row.jogos} ${row.jogos === 1 ? "pelada" : "peladas"}`,
+        )}
+        {board(
+          "Assistente",
+          (row) => row.assistencias,
+          (row) => `${row.assistencias} ${row.assistencias === 1 ? "assistência" : "assistências"}`,
           (row) => `${row.jogos} ${row.jogos === 1 ? "pelada" : "peladas"}`,
         )}
         {awardBoard("Destaque", "destaque")}
