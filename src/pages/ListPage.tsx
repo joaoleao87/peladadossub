@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { TeamDraw } from "../components/TeamDraw";
+import { MatchCardsGallery } from "../components/MatchCards";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -429,6 +430,7 @@ export function ListPage() {
         {new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} •{" "}
         {game.horario.slice(0, 5)}
       </p>
+      <MatchCardsGallery game={game} />
       {canAnswer &&
         (!mine || ["aguardando_resposta", "recusado"].includes(mine.status)) && (
           <section className="list-response">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ArrowRight, MapPin, Users } from "../components/Icons";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
+import { LatestMatchCardsGallery } from "../components/MatchCards";
 import { useLoad } from "../hooks/useLoad";
 import {
   allPlayers,
@@ -117,6 +118,7 @@ function HomeTutorial({
             <Link to="/lista">Controlar lista</Link>
             <Link to="/financeiro">Abrir financeiro</Link>
             {isSuperAdmin && <Link to="/superadmin">Gerenciar usuários</Link>}
+            {isSuperAdmin && <Link to="/superadmin#cards-da-pelada">Criar cards</Link>}
           </nav>
         </details>
       )}
@@ -223,6 +225,7 @@ export function Dashboard() {
         <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
         {linkPanel}
         {adminRequests}
+        <LatestMatchCardsGallery />
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
         </Empty>
@@ -358,6 +361,7 @@ export function Dashboard() {
       <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
       {linkPanel}
       {adminRequests}
+      <LatestMatchCardsGallery />
       <article className="game-card">
         <div className="game-card-top">
           <Badge>

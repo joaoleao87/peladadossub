@@ -287,7 +287,7 @@ export function SuperAdmin() {
           <Empty title="Nenhuma conta encontrada">Tente outro nome ou filtro.</Empty>
         )}
       </section>
-      <MatchCardsManager />
+      <section id="cards-da-pelada"><MatchCardsManager /></section>
       <Toast message={toast} />
     </section>
   );
