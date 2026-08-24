@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ArrowRight, MapPin, Users } from "../components/Icons";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
-import { LatestMatchCardsGallery } from "../components/MatchCards";
 import { useLoad } from "../hooks/useLoad";
 import {
   allPlayers,
@@ -225,7 +224,7 @@ export function Dashboard() {
         <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
         {linkPanel}
         {adminRequests}
-        <LatestMatchCardsGallery />
+        <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
         </Empty>
@@ -361,7 +360,7 @@ export function Dashboard() {
       <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
       {linkPanel}
       {adminRequests}
-      <LatestMatchCardsGallery />
+      <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
       <article className="game-card">
         <div className="game-card-top">
           <Badge>

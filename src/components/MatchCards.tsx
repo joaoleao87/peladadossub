@@ -74,12 +74,7 @@ export function MatchCardsGallery({ game }: { game?: Pelada }) {
   const [open, setOpen] = useState<MatchCard | null>(null), state = useLoad(() => game ? matchCards(game.id) : Promise.resolve([]), game?.id);
   useEffect(() => { if (!open) return; const close = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(null); }; addEventListener("keydown", close); history.pushState({ card: true }, ""); const pop = () => setOpen(null); addEventListener("popstate", pop, { once: true }); return () => removeEventListener("keydown", close); }, [open]);
   if (state.loading) return null; const cards = (state.data ?? []).filter(card => card.liberado); if (!cards.length) return null;
-  return <section className="cards-gallery"><p className="eyebrow">CARDS DA PELADA</p><h2>Veja os vencedores</h2><div>{cards.map(card => <button key={card.id} onClick={() => setOpen(card)}>{card.titulo}<small>Visualizar card</small></button>)}</div>
+  return <section className="cards-gallery" id="cards-da-pelada"><p className="eyebrow">CARDS DA PELADA</p><h2>Veja os destaques</h2><div>{cards.map(card => <button key={card.id} onClick={() => setOpen(card)}><span className="card-thumb">{card.imagem_path ? <img src={matchCardImageUrl(card.imagem_path)} alt="" /> : card.categoria === "time_destaque" ? card.snapshot_membros.slice(0,4).map(member => member.foto_url ? <img src={member.foto_url} alt="" key={member.nome} /> : <i key={member.nome}>{member.nome[0]}</i>) : card.snapshot_foto_url ? <img src={card.snapshot_foto_url} alt="" /> : <i>{card.snapshot_nome[0]}</i>}</span><span><b>{card.titulo}</b><small>{card.snapshot_nome}</small><em>Toque para ampliar</em></span></button>)}</div>
     {open && <aside className="card-viewer" role="dialog" aria-modal="true"><button className="card-viewer-close" aria-label="Fechar" onClick={() => { history.back(); setOpen(null); }}>×</button>{open.imagem_path ? <img src={matchCardImageUrl(open.imagem_path)} alt={open.titulo} /> : <MatchAwardCard card={open} game={game} />}<footer><button onClick={() => { history.back(); setOpen(null); }}>VOLTAR</button></footer></aside>}
   </section>;
-}
-
-export function LatestMatchCardsGallery() {
-  const state = useLoad(async () => { const [games, cards] = await Promise.all([peladasHistory(), matchCards()]); return games.find(game => cards.some(card => card.pelada_id === game.id)); });
-  if (state.loading || state.error || !state.data) return null; return <MatchCardsGallery game={state.data} />;
 }

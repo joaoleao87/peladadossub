@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import { matchAwards, myMatchVotes, myPlayer, participants, peladasHistory, rankingStats, voteMatchAward } from "../lib/api";
@@ -18,6 +18,9 @@ export function Ranking() {
       : [[], { votes: {} }, []];
     return { rows, game, player, list, votes, awards, gameLists };
   }, []);
+  useEffect(() => {
+    if (!state.loading && location.hash) requestAnimationFrame(() => document.querySelector(location.hash)?.scrollIntoView({ behavior: "smooth" }));
+  }, [state.loading]);
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
