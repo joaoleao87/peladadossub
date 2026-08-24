@@ -32,10 +32,19 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
         item.categoria === "linha" &&
         ["confirmado", "presente"].includes(item.status),
     ),
-    unassigned = eligible.filter(
+    candidates = participants.filter(
+      (item) =>
+        item.categoria === "linha" &&
+        (["confirmado", "presente"].includes(item.status) ||
+          (item.status === "espera" && item.comparecimento)),
+    ),
+    unassigned = candidates.filter(
       (item) => !members.some((member) => member.jogador_id === item.jogador_id),
     ),
-    teamCount = Math.ceil(eligible.length / 4);
+    teamCount = Math.max(
+      Math.ceil(eligible.length / 4),
+      ...members.map((member) => member.time),
+    );
   async function run(
     action: () => Promise<unknown>,
     message: string,
@@ -48,7 +57,9 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
       setToast(message);
     } catch (err) {
       setToast(
-        err instanceof Error ? err.message : "Não foi possível concluir.",
+        err && typeof err === "object" && "message" in err
+          ? String(err.message)
+          : "Não foi possível concluir.",
       );
     } finally {
       setTimeout(() => setToast(""), 3500);
@@ -169,7 +180,7 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
                 <div className="team-bench-player" key={item.jogador_id}>
                   <span>
                     <b>{item.player?.apelido || item.player?.nome}</b>
-                    <small>Nota {item.player?.nota_equilibrio ?? 3}</small>
+                    <small>{item.status === "espera" ? "Suplente presente" : `Nota ${item.player?.nota_equilibrio ?? 3}`}</small>
                   </span>
                   <div>
                     {Array.from(

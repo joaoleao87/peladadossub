@@ -123,7 +123,9 @@ export function ListPage() {
       await state.reload();
     } catch (err) {
       setToast(
-        err instanceof Error ? err.message : "Não foi possível concluir.",
+        err && typeof err === "object" && "message" in err
+          ? String(err.message)
+          : "Não foi possível concluir.",
       );
     } finally {
       setTimeout(() => setToast(""), 3500);
