@@ -4,11 +4,12 @@ Status: implementado em 24/08/2026.
 
 ## Objetivo
 
-Criar três cards por pelada:
+Criar quatro cards por pelada:
 
 - Destaque
 - Surpresa
 - Quem quebrou mais
+- Artilheiro
 
 Cada card exibirá:
 
@@ -120,7 +121,7 @@ Reutilizar a rota/tela de Ranking para apresentar cards liberados, evitando cria
 
 ## Critérios de aceite
 
-- Existem no máximo três cards por pelada, um por categoria.
+- Existem no máximo quatro cards por pelada, um por categoria.
 - Apenas superadmin consegue gerar ou alterar cards.
 - Gerar um card não o libera automaticamente.
 - Usuários comuns enxergam somente cards liberados.

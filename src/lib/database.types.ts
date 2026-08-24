@@ -23,6 +23,7 @@ export type ParticipantStatus =
   | "faltou";
 export type PaymentStatus = "pendente" | "pago" | "isento" | "atrasado";
 export type VoteCategory = "destaque" | "surpresa" | "negativo";
+export type CardCategory = VoteCategory | "artilheiro";
 
 export interface Profile {
   id: string;
@@ -40,7 +41,7 @@ export interface Profile {
 export interface MatchCard {
   id: string;
   pelada_id: string;
-  categoria: VoteCategory;
+  categoria: CardCategory;
   jogador_id: string;
   titulo: string;
   snapshot_nome: string;
