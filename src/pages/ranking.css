@@ -26,6 +26,7 @@
 .ranking-grid .empty {
   min-height: 110px;
 }
+.per-match-scorers{margin-bottom:12px}.per-match-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 5px;border-bottom:1px solid #292b25}.per-match-row span{display:grid;gap:4px}.per-match-row small{color:var(--muted);font-size:9px}.per-match-row strong{color:var(--yellow);white-space:nowrap}
 @media (max-width: 560px) {
   .ranking-grid {
     grid-template-columns: 1fr;

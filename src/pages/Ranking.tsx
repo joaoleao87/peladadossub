@@ -9,17 +9,19 @@ import { MatchCardsGallery } from "../components/MatchCards";
 export function Ranking() {
   const [toast, setToast] = useState("");
   const state = useLoad(async () => {
-    const [rows, games, player] = await Promise.all([rankingStats(), peladasHistory(), myPlayer()]);
-    const game = games.find((item) => new Date(`${item.data}T${item.horario}`).getTime() <= Date.now());
+    const [rows, games, player] = await Promise.all([rankingStats(), peladasHistory(), myPlayer()]),
+      playedGames=games.filter((item) => new Date(`${item.data}T${item.horario}`).getTime() <= Date.now()),
+      gameLists=await Promise.all(playedGames.map(async item=>({game:item,list:await participants(item.id)}))),
+      game = playedGames[0];
     const [list, votes, awards] = game
-      ? await Promise.all([participants(game.id), myMatchVotes(game.id), matchAwards(game.id)])
+      ? await Promise.all([Promise.resolve(gameLists[0]?.list??[]), myMatchVotes(game.id), matchAwards(game.id)])
       : [[], { votes: {} }, []];
-    return { rows, game, player, list, votes, awards };
+    return { rows, game, player, list, votes, awards, gameLists };
   }, []);
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const { rows, game, player, list, votes, awards } = state.data!;
+  const { rows, game, player, list, votes, awards, gameLists } = state.data!;
   const confirmed = list.filter((item) => ["confirmado", "presente"].includes(item.status));
   const canVote = Boolean(player && confirmed.some((item) => item.jogador_id === player.id));
   const targets = confirmed.filter((item) => item.jogador_id !== player?.id);
@@ -101,6 +103,10 @@ export function Ranking() {
             </div>
           </>
         )}
+      </section>
+      <section className="ranking-card per-match-scorers">
+        <h2>Artilheiros por pelada</h2>
+        {gameLists.some(({list})=>list.some(item=>(item.gols??0)>0)) ? gameLists.map(({game:itemGame,list:itemList})=>{const max=Math.max(0,...itemList.map(item=>item.gols??0)),leaders=itemList.filter(item=>(item.gols??0)===max&&max>0);if(!leaders.length)return null;return <div className="per-match-row" key={itemGame.id}><span><b>{leaders.map(playerName).join(" / ")}</b><small>{new Date(`${itemGame.data}T12:00`).toLocaleDateString("pt-BR")} • {itemGame.local}</small></span><strong>{max} {max===1?"gol":"gols"}</strong></div>}) : <Empty title="Ainda sem gols registrados" />}
       </section>
       <div className="ranking-grid">
         {board(
