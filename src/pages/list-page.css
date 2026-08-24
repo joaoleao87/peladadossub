@@ -179,8 +179,17 @@
     flex-wrap: wrap;
   }
   .list-player-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     width: calc(100% - 70px);
     margin-left: 70px;
+  }
+  .list-player-actions > .goal-control {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .list-player-actions > button {
+    width: 100%;
   }
   .queue-player {
     grid-template-columns: 1fr;

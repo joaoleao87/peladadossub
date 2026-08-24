@@ -85,6 +85,7 @@ export interface TeamMember {
   time: number;
   ordem: number;
   vencedor?: boolean;
+  vitorias?: number;
   player?: Player;
 }
 export interface PeladaSeries {
