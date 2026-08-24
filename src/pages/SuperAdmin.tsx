@@ -17,6 +17,7 @@ import type {
   Role,
 } from "../lib/database.types";
 import "./super-admin.css";
+import { MatchCardsManager } from "../components/MatchCards";
 
 const roles: { value: Role; label: string }[] = [
   { value: "user", label: "Usuário" },
@@ -286,6 +287,7 @@ export function SuperAdmin() {
           <Empty title="Nenhuma conta encontrada">Tente outro nome ou filtro.</Empty>
         )}
       </section>
+      <MatchCardsManager />
       <Toast message={toast} />
     </section>
   );

@@ -4,6 +4,7 @@ import { useLoad } from "../hooks/useLoad";
 import { matchAwards, myMatchVotes, myPlayer, participants, peladasHistory, rankingStats, voteMatchAward } from "../lib/api";
 import type { MatchAwardResult, RankingStats, VoteCategory } from "../lib/database.types";
 import "./ranking.css";
+import { MatchCardsGallery } from "../components/MatchCards";
 
 export function Ranking() {
   const [toast, setToast] = useState("");
@@ -84,6 +85,7 @@ export function Ranking() {
     <section>
       <p className="eyebrow">DESEMPENHO DAS PELADAS</p>
       <h1>Ranking</h1>
+      <MatchCardsGallery game={game} />
       <section className="ranking-vote" id="votacao">
         <p className="eyebrow">ÚLTIMA PELADA</p>
         <h2>Vote por categoria</h2>

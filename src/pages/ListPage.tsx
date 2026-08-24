@@ -11,6 +11,7 @@ import {
   myMatchVotes,
   participants,
   peladasHistory,
+  replaceAbsent,
   setParticipantGoals,
   setListPhase,
   startPelada,
@@ -33,7 +34,8 @@ export function ListPage() {
   const { profile } = useAuth(),
     isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     [selected, setSelected] = useState(""),
-    [toast, setToast] = useState("");
+    [toast, setToast] = useState(""),
+    [absent, setAbsent] = useState<Participant | null>(null);
   const state = useLoad(async () => {
     const [games, players, ownPlayer] = await Promise.all([
         peladasHistory(),
@@ -111,6 +113,9 @@ export function ListPage() {
       confirmed.some(isMine),
     voteTargets = confirmed.filter((item) => !isMine(item)),
     myVotes = voting.data ?? { votes: {} };
+  const displayName = (item: Participant) => item.player?.profile?.apelido?.trim() || item.player?.profile?.nome || item.player?.apelido || item.player?.nome || item.profile?.apelido || item.profile?.nome || "?",
+    alphabetical = (items: Participant[]) => [...items].sort((a, b) => displayName(a).localeCompare(displayName(b), "pt-BR", { sensitivity: "base" })),
+    presentSubstitutes = alphabetical(waiting.filter((item) => item.comparecimento));
   async function run(action: () => Promise<unknown>, message: string) {
     try {
       await action();
@@ -195,14 +200,7 @@ export function ListPage() {
         </div>
       </section>
     );
-  const playerName = (item: Participant) =>
-    item.player?.profile?.apelido?.trim() ||
-    item.player?.profile?.nome ||
-    item.player?.apelido ||
-    item.player?.nome ||
-    item.profile?.apelido ||
-    item.profile?.nome ||
-    "?";
+  const playerName = displayName;
   const group = (title: string, items: Participant[]) => (
     <section className="list-group">
       <header className="list-heading">
@@ -210,7 +208,7 @@ export function ListPage() {
         <span>{items.length}</span>
       </header>
       {items.length ? (
-        items.map((item, index) => {
+        alphabetical(items).map((item, index) => {
           const name = playerName(item);
           return (
             <div
@@ -243,7 +241,7 @@ export function ListPage() {
                 >
                   {isAdmin &&
                     started &&
-                    ["confirmado", "presente"].includes(item.status) && (
+                    (["confirmado", "presente"].includes(item.status) || item.comparecimento) && (
                       <span className="goal-control">
                         <small>Gols</small>
                         <button
@@ -285,7 +283,7 @@ export function ListPage() {
                   {isAdmin && game.pelada_iniciada && ["confirmado", "presente", "espera"].includes(item.status) && (
                     <>
                       <button type="button" className={`mini ${item.comparecimento ? "" : "secondary"}`} onClick={() => void run(() => adminParticipantById(item.id, "presente"), "Presença registrada.")}>Presente</button>
-                      <button type="button" className="mini danger" onClick={() => void run(() => adminParticipantById(item.id, "faltou"), "Falta registrada e vaga repassada.")}>Falta</button>
+                      <button type="button" className="mini danger" onClick={() => presentSubstitutes.length && item.categoria === "linha" && item.status !== "espera" ? setAbsent(item) : void run(() => adminParticipantById(item.id, "faltou"), "Falta registrada.")}>Falta</button>
                     </>
                   )}
                   {isAdmin && !game.pelada_iniciada && (
@@ -533,6 +531,7 @@ export function ListPage() {
         onChanged={state.reload}
       />
       <Toast message={toast} />
+      {absent && <aside className="substitute-modal" role="dialog" aria-modal="true"><section><h2>Quem sobe no lugar?</h2><p>Marque a falta de {playerName(absent)} e escolha um suplente presente.</p>{presentSubstitutes.map((item) => <button key={item.id} onClick={() => { setAbsent(null); void run(() => replaceAbsent(absent.id, item.id), `${playerName(item)} promovido para o lugar de ${playerName(absent)}.`); }}>{playerName(item)}</button>)}<button className="secondary" onClick={() => setAbsent(null)}>Cancelar</button></section></aside>}
     </section>
   );
 }

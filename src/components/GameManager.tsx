@@ -91,7 +91,7 @@ export function GameManager() {
       </header>
       {items.length ? (
         <ol className="roster-list">
-          {items.map((item, index) => {
+          {[...items].sort((a,b)=>((a.player?.profile?.apelido||a.player?.apelido||a.player?.nome||a.profile?.nome||"").localeCompare(b.player?.profile?.apelido||b.player?.apelido||b.player?.nome||b.profile?.nome||"","pt-BR",{sensitivity:"base"}))).map((item, index) => {
             const account = item.player?.profile,
               name =
               account?.apelido?.trim() ||

@@ -37,6 +37,19 @@ export interface Profile {
   validade_mensalidade: string | null;
   ativo: boolean;
 }
+export interface MatchCard {
+  id: string;
+  pelada_id: string;
+  categoria: VoteCategory;
+  jogador_id: string;
+  titulo: string;
+  snapshot_nome: string;
+  snapshot_foto_url: string | null;
+  snapshot_time: string | null;
+  snapshot_gols: number;
+  imagem_path: string | null;
+  liberado: boolean;
+}
 export interface Player {
   id: string;
   nome: string;
@@ -46,6 +59,7 @@ export interface Player {
   tipo: PlayerType;
   posicao: ListPosition;
   ativo: boolean;
+  confirmacao_bloqueada?: boolean;
   isento_mensalidade?: boolean;
   nota_equilibrio?: number;
   profile?: Profile | null;

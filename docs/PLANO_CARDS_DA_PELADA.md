@@ -1,6 +1,6 @@
 # Plano futuro — Cards da pelada
 
-Status: planejado, ainda não implementado.
+Status: implementado em 24/08/2026.
 
 ## Objetivo
 
