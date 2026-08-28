@@ -10,3 +10,4 @@
 @media(max-width:700px){.cards-downloads>*{flex:1}.card-viewer>footer button{max-width:210px}}
 .gallery-downloads{display:flex;gap:8px;margin:10px 0 14px}.gallery-downloads button{min-height:40px;padding:9px 12px;font-size:11px}
 @media(max-width:480px){.gallery-downloads>*{flex:1}}
+.match-card .match-card-wins{width:max-content;margin-top:8px;padding:5px 8px;background:var(--yellow);color:#111;font:800 11px Inter;text-transform:uppercase;font-style:normal}

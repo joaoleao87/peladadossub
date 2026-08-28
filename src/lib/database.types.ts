@@ -48,6 +48,7 @@ export interface MatchCard {
   snapshot_foto_url: string | null;
   snapshot_time: string | null;
   snapshot_gols: number;
+  snapshot_vitorias?: number;
   snapshot_membros: { nome: string; foto_url: string | null }[];
   imagem_path: string | null;
   liberado: boolean;
