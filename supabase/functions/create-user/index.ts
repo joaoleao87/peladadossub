@@ -12,9 +12,23 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
     const userId=String(body.user_id??'')
     if(!userId)throw new Error('Usuário inválido')
     if(userId===callerId)throw new Error('Você não pode excluir a própria conta')
+    const {data:linked}=await admin.from('jogadores').select('id').eq('user_id',userId).maybeSingle()
+    if(linked)throw new Error('Contas vinculadas devem ser suspensas, não excluídas')
     const {data:target,error:targetError}=await admin.from('profiles').select('role').eq('id',userId).single();if(targetError)throw targetError
+    if(target.role!=='user')throw new Error('Somente usuários comuns sem vínculo podem ser excluídos')
     if(target.role==='superadmin'&&(count??0)<=1)throw new Error('Não é possível excluir o último superadmin')
     const {error}=await admin.auth.admin.deleteUser(userId);if(error)throw error
+    return json({ok:true})
+  }
+  if(action==='suspend'||action==='restore'){
+    const userId=String(body.user_id??''),suspended=action==='suspend'
+    if(!userId)throw new Error('Usuário inválido')
+    if(userId===callerId)throw new Error('Você não pode suspender a própria conta')
+    const {data:linked}=await admin.from('jogadores').select('id').eq('user_id',userId).maybeSingle()
+    if(!linked)throw new Error('Conta sem vínculo deve ser excluída')
+    const {error:authError}=await admin.auth.admin.updateUserById(userId,{ban_duration:suspended?'876000h':'none'});if(authError)throw authError
+    const {error:profileError}=await admin.from('profiles').update({ativo:!suspended}).eq('id',userId);if(profileError)throw profileError
+    const {error:playerError}=await admin.from('jogadores').update({ativo:!suspended,confirmacao_bloqueada:suspended}).eq('id',linked.id);if(playerError)throw playerError
     return json({ok:true})
   }
   const password=String(body.password??'');if(password.length<8)throw new Error('A senha precisa ter pelo menos 8 caracteres')
@@ -23,5 +37,5 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nome}});if(error)throw error
   const {error:updateError}=await admin.from('profiles').update({role:body.role,tipo_jogador:body.tipo_jogador,mensalista_ativo:body.tipo_jogador==='mensalista',posicao_lista:body.posicao_lista}).eq('id',data.user.id);if(updateError)throw updateError
   return json({id:data.user.id})
-}catch(error){return json({error:error instanceof Error?error.message:'Falha ao administrar usuário'},400)}})
+}catch(error){return json({error:error instanceof Error?error.message:'Falha ao administrar usuário'})}})
 function json(value:unknown,status=200){return new Response(JSON.stringify(value),{status,headers:{...cors,'Content-Type':'application/json'}})}

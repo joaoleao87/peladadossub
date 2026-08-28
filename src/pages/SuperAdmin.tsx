@@ -3,13 +3,14 @@ import { useAuth, type PreviewMode } from "../auth/AuthContext";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
-  allPlayers,
+  allManagedPlayers,
   allProfiles,
   createPlayerForUser,
   createUser,
   deleteUser,
   manageUser,
   resetUserPassword,
+  setUserSuspended,
 } from "../lib/api";
 import type {
   ListPosition,
@@ -41,7 +42,7 @@ export function SuperAdmin() {
     state = useLoad(async () => {
       const [profiles, players] = await Promise.all([
         allProfiles(),
-        allPlayers(),
+        allManagedPlayers(),
       ]);
       return { profiles, players };
     }),
@@ -91,10 +92,18 @@ export function SuperAdmin() {
   }
   async function removeUser(profile: Profile) {
     const name = profile.apelido || profile.nome;
-    if (!confirm(`Excluir a conta de ${name}? O jogador e o histórico serão preservados.`)) return;
+    if (!confirm(`Excluir permanentemente a conta sem vínculo de ${name}?`)) return;
     setBusy(true);
     try { await deleteUser(profile.id); feedback("Usuário excluído."); await state.reload(); }
     catch (err) { feedback(err instanceof Error ? err.message : "Não foi possível excluir o usuário."); }
+    finally { setBusy(false); }
+  }
+  async function toggleSuspension(profile: Profile) {
+    const suspended = !profile.ativo, name = profile.apelido || profile.nome;
+    if (!confirm(`${suspended ? "Suspender" : "Reativar"} o acesso de ${name}?`)) return;
+    setBusy(true);
+    try { await setUserSuspended(profile.id, suspended); feedback(suspended ? "Acesso suspenso." : "Acesso reativado."); await state.reload(); }
+    catch (err) { feedback(err instanceof Error ? err.message : "Não foi possível alterar o acesso."); }
     finally { setBusy(false); }
   }
   async function changePassword(userId: string) {
@@ -269,22 +278,21 @@ export function SuperAdmin() {
                     </small>
                   </label>
                   {!player && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void run(
-                          () => createPlayerForUser(profile.id),
-                          "Jogador diarista de linha criado e vinculado.",
-                        )
-                      }
-                    >
+                    <button type="button" onClick={() => void run(() => createPlayerForUser(profile.id), "Jogador diarista de linha criado e vinculado.")}>
                       Criar jogador para esta conta
                     </button>
                   )}
-                  <div className="user-danger-zone">
-                    <span><b>Excluir conta</b><small>Remove o acesso e preserva o jogador e o histórico.</small></span>
-                    <button type="button" className="mini danger" disabled={busy || profile.id === realProfile?.id} title={profile.id === realProfile?.id ? "Você não pode excluir a própria conta" : "Excluir usuário"} onClick={() => void removeUser(profile)}>EXCLUIR USUÁRIO</button>
-                  </div>
+                  {player ? (
+                    <div className="user-danger-zone">
+                      <span><b>{profile.ativo ? "Suspender acesso" : "Acesso suspenso"}</b><small>{profile.ativo ? "Bloqueia o login e a confirmação na lista." : "Reative para liberar o login novamente."}</small></span>
+                      <button type="button" className={`mini ${profile.ativo ? "danger" : ""}`} disabled={busy || profile.id === realProfile?.id} onClick={() => void toggleSuspension(profile)}>{profile.ativo ? "SUSPENDER" : "REATIVAR ACESSO"}</button>
+                    </div>
+                  ) : profile.role === "user" ? (
+                    <div className="user-danger-zone">
+                      <span><b>Excluir conta</b><small>Disponível apenas para usuário sem jogador vinculado.</small></span>
+                      <button type="button" className="mini danger" disabled={busy} onClick={() => void removeUser(profile)}>EXCLUIR USUÁRIO</button>
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     className="secondary user-password"
