@@ -37,10 +37,6 @@ export function NotificationSettings() {
     }
   }
 
-  async function test() {
-    try { await showTestNotification(); setMessage("Notificação de teste enviada."); }
-    catch { setMessage("Não foi possível exibir a notificação neste aparelho."); }
-  }
 
   return <section className="panel notification-settings">
     <div><h2>Notificações</h2>
@@ -52,7 +48,6 @@ export function NotificationSettings() {
     </div>
     {!installed && <Link to="/instalar">VER COMO INSTALAR</Link>}
     {installed && permission === "default" && <button type="button" onClick={() => void enable()}>ATIVAR NOTIFICAÇÕES</button>}
-    {installed && permission === "granted" && <button type="button" className="secondary" onClick={() => void test()}>ENVIAR TESTE</button>}
     {message && <small>{message}</small>}
   </section>;
 }
