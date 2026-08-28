@@ -9,11 +9,12 @@ import {
   generateNextPelada,
   savePelada,
   saveSeries,
+  sendMassNotification,
 } from "../lib/api";
 import type { Pelada } from "../lib/database.types";
 
 export function Admin() {
-  const [tab, setTab] = useState<"pelada" | "jogadores" | "controle">("pelada"),
+  const [tab, setTab] = useState<"pelada" | "jogadores" | "controle" | "notificacoes">("pelada"),
     [toast, setToast] = useState("");
   const state = useLoad(async () => {
     const [summary, series] = await Promise.all([
@@ -63,6 +64,13 @@ export function Admin() {
       "Recorrência salva.",
     );
   }
+  async function notificationSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form=e.currentTarget,f=new FormData(form);
+    if(!confirm("Enviar esta notificação para todas as contas ativas?"))return;
+    try { const total=await sendMassNotification(String(f.get("titulo")),String(f.get("mensagem")),String(f.get("link")||"/")); feedback(`Notificação registrada para ${total} conta${total===1?"":"s"}.`); form.reset(); }
+    catch(err){feedback(err instanceof Error?err.message:"Não foi possível enviar.");}
+  }
   async function gameSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -86,7 +94,7 @@ export function Admin() {
       <p className="eyebrow">DIRETORIA</p>
       <h1>Admin</h1>
       <div className="tabs">
-        {(["pelada", "jogadores", "controle"] as const).map((x) => (
+        {(["pelada", "jogadores", "controle", "notificacoes"] as const).map((x) => (
           <button
             type="button"
             className={tab === x ? "active" : ""}
@@ -184,6 +192,16 @@ export function Admin() {
             <button className="wide">SALVAR OCORRÊNCIA</button>
           </form>
         </>
+      )}
+      {tab === "notificacoes" && (
+        <form className="panel form-grid" onSubmit={notificationSubmit}>
+          <h2>Notificação em massa</h2>
+          <label className="wide">Título<input name="titulo" maxLength={80} required /></label>
+          <label className="wide">Mensagem<textarea name="mensagem" maxLength={300} rows={4} required /></label>
+          <label className="wide">Destino<select name="link" defaultValue="/"><option value="/">Tela inicial</option><option value="/lista">Lista</option><option value="/perfil">Perfil</option><option value="/ranking">Ranking</option></select></label>
+          <button className="wide">ENVIAR PARA TODOS</button>
+          <small className="wide">O envio será registrado para todas as contas ativas.</small>
+        </form>
       )}
       {tab === "jogadores" && <PlayerManager />}
       {tab === "controle" && <PlayerControlPanel />}

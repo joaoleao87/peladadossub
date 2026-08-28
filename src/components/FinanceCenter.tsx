@@ -12,6 +12,8 @@ import {
   saveFinanceConfig,
   settleMonthlyCharges,
   updatePayment,
+  notifyAllUnpaid,
+  notifyPayment,
 } from "../lib/api";
 import type { Payment } from "../lib/database.types";
 import { ExpensePanel } from "./ExpensePanel";
@@ -137,6 +139,9 @@ export function FinanceCenter() {
                   </button>
                 )}
               {["pendente", "atrasado"].includes(p.status) && (
+                <button className="mini secondary" onClick={() => run(() => notifyPayment(p.id), "Notificação de cobrança registrada.")}>NOTIFICAR</button>
+              )}
+              {["pendente", "atrasado"].includes(p.status) && (
                 <button
                   className="mini"
                   onClick={() =>
@@ -195,6 +200,7 @@ export function FinanceCenter() {
               <small>{summary.pendingCount} cobrança{summary.pendingCount===1?"":"s"} em aberto</small>
             </div>
           </div>
+          {summary.pendingCount > 0 && <button className="full" onClick={() => confirm("Notificar todos os jogadores com pagamento pendente?") && void run(async () => { const total=await notifyAllUnpaid(); feedback(`Notificação registrada para ${total} conta${total===1?"":"s"}.`); }, "Notificações registradas.")}>NOTIFICAR TODOS OS PENDENTES</button>}
           <div className="finance-explanation">
             <b>Por que o previsto pode ficar negativo?</b>
             <span>{money.format(summary.balance)} em caixa + {money.format(summary.pendingIncome)} a receber − {money.format(summary.futureCosts)} a pagar = <strong>{money.format(summary.expectedBalance)}</strong>.</span>

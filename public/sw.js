@@ -26,6 +26,7 @@ self.addEventListener('notificationclick', event => {
   event.notification.close()
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windows => {
     const open = windows.find(client => 'focus' in client)
-    return open ? open.focus().then(() => open.navigate('/lista')) : clients.openWindow('/lista')
+    const target = event.notification.data?.url || '/lista'
+    return open ? open.focus().then(() => open.navigate(target)) : clients.openWindow(target)
   }))
 })
