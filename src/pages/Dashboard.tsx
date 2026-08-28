@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ArrowRight, MapPin, Users } from "../components/Icons";
+import { HomeNotificationPrompt } from "../components/HomeNotificationPrompt";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -221,6 +222,7 @@ export function Dashboard() {
           BEM-VINDO, {profile?.apelido || profile?.nome}
         </p>
         <h1>Próxima pelada</h1>
+        <HomeNotificationPrompt />
         <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
         {linkPanel}
         {adminRequests}
@@ -357,6 +359,7 @@ export function Dashboard() {
     <section>
       <p className="eyebrow">BEM-VINDO, {profile?.apelido || profile?.nome}</p>
       <h1>Próxima pelada</h1>
+      <HomeNotificationPrompt />
       <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
       {linkPanel}
       {adminRequests}

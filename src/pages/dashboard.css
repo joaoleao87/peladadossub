@@ -40,3 +40,4 @@
   display: flex;
   gap: 5px;
 }
+.home-notification-prompt{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:-8px 0 18px;padding:14px;background:#24230f;border:1px solid #766b12}.home-notification-prompt>span{display:grid;gap:4px}.home-notification-prompt b{color:var(--yellow);font:800 18px 'Barlow Condensed';text-transform:uppercase}.home-notification-prompt small{color:#d4d5cf;font-size:11px}.home-notification-prompt button,.home-notification-prompt a{flex:0 0 auto;min-height:38px;padding:9px 11px;background:var(--yellow);color:#111;text-decoration:none;font:800 11px 'Barlow Condensed';display:grid;place-items:center}.home-notification-prompt em{flex-basis:100%;color:#ff9a9a;font-size:10px;font-style:normal}@media(max-width:520px){.home-notification-prompt{align-items:stretch;flex-direction:column}.home-notification-prompt button,.home-notification-prompt a{width:100%}}
