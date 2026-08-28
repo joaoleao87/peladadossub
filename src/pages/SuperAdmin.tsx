@@ -111,6 +111,19 @@ export function SuperAdmin() {
     if (!password) return;
     await run(() => resetUserPassword(userId, password), "Senha alterada.");
   }
+  async function testConfirmationReminder() {
+    if (!("Notification" in window)) return feedback("Notificações não estão disponíveis neste navegador.");
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission !== "granted") return feedback("Permita as notificações para executar o teste.");
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Presença confirmada", {
+        body: "Você está confirmado na pelada. Caso precise desistir, avise até as 16h.",
+        icon: "/icon-192.png", badge: "/icon-192.png", tag: "teste-confirmacao-16h",
+      });
+      feedback("Teste enviado somente para este aparelho.");
+    } catch { feedback("Não foi possível enviar o teste neste aparelho."); }
+  }
   const linkedPlayer = (profile: Profile) =>
     players.find((player) => player.user_id === profile.id);
   const query = search.trim().toLocaleLowerCase(),
@@ -134,6 +147,10 @@ export function SuperAdmin() {
           <option value="diarista">Diarista</option>
           <option value="sem_vinculo">Conta sem vínculo</option>
         </select>
+      </section>
+      <section className="notification-test-panel">
+        <span><b>Teste de lembrete</b><small>Envia somente para este aparelho de superadmin.</small></span>
+        <button type="button" onClick={() => void testConfirmationReminder()}>TESTAR CONFIRMAÇÃO ATÉ 16H</button>
       </section>
       <form className="panel form-grid" onSubmit={submit}>
         <h2>Criar usuário</h2>
