@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { LogOut } from "../components/Icons";
 import { MyPayments } from "../components/MyPayments";
+import { NotificationSettings } from "../components/NotificationSettings";
 import { AvatarCropper } from "../components/AvatarCropper";
 import { Badge, Spinner, Toast } from "../components/Ui";
 import {
@@ -124,6 +125,7 @@ export function ProfilePage() {
         <div><h2>Instalar aplicativo</h2><p>Adicione o Pelada dos Sub à tela inicial do celular para acessar mais rápido.</p></div>
         <Link to="/instalar">VER INSTRUÇÕES DE INSTALAÇÃO</Link>
       </section>
+      <NotificationSettings />
       <MyPayments />
       <button
         className="secondary full"
