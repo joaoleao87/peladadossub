@@ -111,6 +111,7 @@ export function SuperAdmin() {
     if (!password) return;
     await run(() => resetUserPassword(userId, password), "Senha alterada.");
   }
+  const linkedPlayer = (profile: Profile) =>
     players.find((player) => player.user_id === profile.id);
   const query = search.trim().toLocaleLowerCase(),
     filteredProfiles = profiles.filter((profile) => {

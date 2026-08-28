@@ -6,7 +6,7 @@ function currentPermission(): NotificationPermission | "unsupported" {
   return "Notification" in window ? Notification.permission : "unsupported";
 }
 
-async function showTestNotification() {
+async function showActivationNotification() {
   const registration = await navigator.serviceWorker?.ready;
   const options: NotificationOptions = {
     body: "As notificações estão funcionando neste aparelho.",
@@ -29,8 +29,8 @@ export function NotificationSettings() {
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result === "granted") {
-        await showTestNotification();
-        setMessage("Notificação de teste enviada.");
+        await showActivationNotification();
+        setMessage("Notificações ativadas.");
       } else setMessage("A permissão não foi concedida.");
     } catch {
       setMessage("Este navegador não permitiu ativar as notificações.");
