@@ -84,6 +84,6 @@ export async function recordNotificationPreference(status:'ativada'|'negada'|'in
 export interface AppNotification{id:string;titulo:string;mensagem:string;link:string;tipo:string;created_at:string}
 export async function pendingNotifications(){const{data,error}=await supabase.from('notificacoes').select('id,titulo,mensagem,link,tipo,created_at').is('entregue_em',null).order('created_at').limit(20);if(error)throw error;return(data??[]) as AppNotification[]}
 export async function markNotificationsDelivered(ids:string[]){if(!ids.length)return;const{error}=await supabase.from('notificacoes').update({entregue_em:new Date().toISOString()}).in('id',ids);if(error)throw error}
-export async function sendMassNotification(title:string,message:string,link='/'){const{data,error}=await supabase.rpc('admin_enviar_notificacao_massa',{p_titulo:title,p_mensagem:message,p_link:link});if(error)throw error;return Number(data??0)}
+export async function sendMassNotification(title:string,message:string,link='/',audience='todos'){const{data,error}=await supabase.rpc('admin_enviar_notificacao_massa',{p_titulo:title,p_mensagem:message,p_link:link,p_publico:audience});if(error)throw error;return Number(data??0)}
 export async function notifyPayment(paymentId:string){const{data,error}=await supabase.rpc('admin_notificar_pagamento',{p_pagamento_id:paymentId});if(error)throw error;return Number(data??0)}
 export async function notifyAllUnpaid(){const{data,error}=await supabase.rpc('admin_notificar_inadimplentes');if(error)throw error;return Number(data??0)}

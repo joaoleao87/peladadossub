@@ -67,8 +67,8 @@ export function Admin() {
   async function notificationSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form=e.currentTarget,f=new FormData(form);
-    if(!confirm("Enviar esta notificação para todas as contas ativas?"))return;
-    try { const total=await sendMassNotification(String(f.get("titulo")),String(f.get("mensagem")),String(f.get("link")||"/")); feedback(`Notificação registrada para ${total} conta${total===1?"":"s"}.`); form.reset(); }
+    if(!confirm("Enviar esta notificação para o público selecionado?"))return;
+    try { const total=await sendMassNotification(String(f.get("titulo")),String(f.get("mensagem")),String(f.get("link")||"/"),String(f.get("publico")||"todos")); feedback(`Notificação registrada para ${total} conta${total===1?"":"s"}.`); form.reset(); }
     catch(err){feedback(err instanceof Error?err.message:"Não foi possível enviar.");}
   }
   async function gameSubmit(e: FormEvent<HTMLFormElement>) {
@@ -198,9 +198,10 @@ export function Admin() {
           <h2>Notificação em massa</h2>
           <label className="wide">Título<input name="titulo" maxLength={80} required /></label>
           <label className="wide">Mensagem<textarea name="mensagem" maxLength={300} rows={4} required /></label>
+          <label className="wide">Público<select name="publico" defaultValue="todos"><option value="todos">Todas as contas ativas</option><option value="mensalistas">Mensalistas</option><option value="diaristas">Diaristas</option><option value="confirmados">Confirmados na próxima pelada</option><option value="inadimplentes">Pagamentos pendentes</option><option value="admins">Admins e superadmins</option></select></label>
           <label className="wide">Destino<select name="link" defaultValue="/"><option value="/">Tela inicial</option><option value="/lista">Lista</option><option value="/perfil">Perfil</option><option value="/ranking">Ranking</option></select></label>
-          <button className="wide">ENVIAR PARA TODOS</button>
-          <small className="wide">O envio será registrado para todas as contas ativas.</small>
+          <button className="wide">ENVIAR NOTIFICAÇÃO</button>
+          <small className="wide">O envio será registrado para o público selecionado.</small>
         </form>
       )}
       {tab === "jogadores" && <PlayerManager />}
