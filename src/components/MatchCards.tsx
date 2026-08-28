@@ -11,7 +11,7 @@ import "./match-cards.css";
 
 const categories: [CardCategory, string][] = [
   ["destaque", "Destaque"], ["surpresa", "Surpresa"],
-  ["negativo", "Quem quebrou mais"], ["artilheiro", "Artilheiro"], ["time_destaque", "Time Destaque"],
+  ["negativo", "Quem quebrou mais"], ["artilheiro", "Artilheiro"], ["goleiro_destaque", "Goleiro Destaque"], ["time_destaque", "Time Destaque"],
 ];
 
 export function MatchAwardCard({ card, game }: { card: MatchCard; game?: Pelada }) {
@@ -38,7 +38,8 @@ export function MatchCardsManager() {
   if (state.error) return <ErrorState message={state.error} retry={state.reload} />;
   const { games, list, awards, cards, teams = [] } = state.data!, id = gameId || games[0]?.id || "", game = games.find(item => item.id === id),
     name = (item: Participant) => item.player?.profile?.apelido || item.player?.apelido || item.player?.nome || "?",
-    participantsInGame = list.filter(item => item.status !== "cancelado" && item.status !== "faltou").sort((a, b) => name(a).localeCompare(name(b), "pt-BR"));
+    participantsInGame = list.filter(item => item.status !== "cancelado" && item.status !== "faltou").sort((a, b) => name(a).localeCompare(name(b), "pt-BR")),
+    keepersInGame = participantsInGame.filter(item => item.categoria === "goleiro");
   async function run(action: () => Promise<unknown>, message: string) {
     try { await action(); setToast(message); await state.reload(); }
     catch (error) { setToast(error && typeof error === "object" && "message" in error ? String(error.message) : "Não foi possível concluir."); }
@@ -51,17 +52,17 @@ export function MatchCardsManager() {
       featuredTeams = [...new Set(teams.filter(item => (item.vitorias ?? 0) === teamWins && teamWins > 0).map(item => item.time))],
       teamChoices = featuredTeams.map(team => { const members = teams.filter(item => item.time === team); return { jogador_id: members[0]?.jogador_id ?? "", nome: members.map(item => item.player?.profile?.apelido || item.player?.apelido || item.player?.nome || "?").join(" • ") }; }),
       top = category === "artilheiro" ? Math.max(0, ...participantsInGame.map(item => item.gols ?? 0)) : category === "time_destaque" ? teamWins : voteResults[0]?.votos ?? 0,
-      winners = category === "time_destaque" ? teamChoices : category === "artilheiro"
+      winners = category === "goleiro_destaque" ? keepersInGame.map(item => ({ jogador_id: item.jogador_id, nome: name(item) })) : category === "time_destaque" ? teamChoices : category === "artilheiro"
         ? participantsInGame.filter(item => (item.gols ?? 0) === top && top > 0).map(item => ({ jogador_id: item.jogador_id, nome: name(item) }))
         : voteResults.filter(item => item.votos === top && top > 0).map(item => ({ jogador_id: item.jogador_id, nome: item.apelido || item.nome })),
       choice = choices[category] || winners[0]?.jogador_id || "", card = cards.find(item => item.categoria === category),
       unit = category === "artilheiro" ? (top === 1 ? "gol" : "gols") : category === "time_destaque" ? (top === 1 ? "vitória" : "vitórias") : (top === 1 ? "voto" : "votos");
     return <article className="card-manager-row" key={category}><div><h3>{title}</h3>
-      {!winners.length ? <small>{category === "artilheiro" ? "Sem gols registrados nesta pelada." : category === "time_destaque" ? "Registre as vitórias dos times primeiro." : "Sem votos. Escolha um participante."}</small>
-        : winners.length > 1 ? <small>Empate com {top} {unit}. Escolha o vencedor.</small>
+      {!winners.length ? <small>{category === "artilheiro" ? "Sem gols registrados nesta pelada." : category === "time_destaque" ? "Registre as vitórias dos times primeiro." : category === "goleiro_destaque" ? "Nenhum goleiro participou desta pelada." : "Sem votos. Escolha um participante."}</small>
+        : category === "goleiro_destaque" ? <small>Escolha o goleiro destaque da pelada.</small> : winners.length > 1 ? <small>Empate com {top} {unit}. Escolha o vencedor.</small>
           : <small>{winners[0].nome} • {top} {unit}</small>}
       <select value={choice} onChange={event => setChoices(old => ({ ...old, [category]: event.target.value }))}><option value="">Escolha…</option>
-        {((category === "artilheiro" || category === "time_destaque") && winners.length ? winners : category === "time_destaque" ? [] : participantsInGame.map(item => ({ jogador_id: item.jogador_id, nome: name(item) }))).map(item => <option value={item.jogador_id} key={item.jogador_id}>{item.nome}</option>)}
+        {((category === "artilheiro" || category === "time_destaque" || category === "goleiro_destaque") && winners.length ? winners : category === "time_destaque" ? [] : participantsInGame.map(item => ({ jogador_id: item.jogador_id, nome: name(item) }))).map(item => <option value={item.jogador_id} key={item.jogador_id}>{item.nome}</option>)}
       </select><button disabled={!choice} onClick={() => void run(async () => { await generateMatchCard(id, category, choice); if (card?.imagem_path) await deleteMatchCardImage(card.imagem_path); }, "Card gerado como rascunho.")}>Gerar rascunho</button></div>
       {card && <div className="card-manager-preview">{card.imagem_path ? <img src={matchCardImageUrl(card.imagem_path)} alt={card.titulo} /> : <MatchAwardCard card={card} game={game} />}
         <nav><label className="upload-card">Substituir imagem<input type="file" accept="image/jpeg,image/png,image/webp" onChange={event => { const file = event.target.files?.[0]; if (file) void run(async () => { const old = card.imagem_path, path = await uploadMatchCardImage(card, file); await updateMatchCard(card, false, path); if (old) await deleteMatchCardImage(old); }, "Imagem substituída em rascunho."); }} /></label>
