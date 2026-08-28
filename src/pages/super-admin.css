@@ -103,3 +103,4 @@
   padding: 7px 10px;
   font-size: 11px;
 }
+.user-danger-zone{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px;padding-top:14px;border-top:1px solid #4b2929}.user-danger-zone>span{display:grid;gap:4px}.user-danger-zone b{color:#ff8f8f;font-size:12px}.user-danger-zone .danger{flex:0 0 auto}@media(max-width:440px){.user-danger-zone{align-items:stretch;flex-direction:column}.user-danger-zone button{width:100%}}

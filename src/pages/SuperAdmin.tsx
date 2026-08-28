@@ -7,6 +7,7 @@ import {
   allProfiles,
   createPlayerForUser,
   createUser,
+  deleteUser,
   manageUser,
   resetUserPassword,
 } from "../lib/api";
@@ -36,7 +37,7 @@ const filters: { value: UserFilter; label: string }[] = [
 ];
 
 export function SuperAdmin() {
-  const { preview, setPreview } = useAuth(),
+  const { preview, setPreview, realProfile } = useAuth(),
     state = useLoad(async () => {
       const [profiles, players] = await Promise.all([
         allProfiles(),
@@ -87,6 +88,14 @@ export function SuperAdmin() {
     } finally {
       setBusy(false);
     }
+  }
+  async function removeUser(profile: Profile) {
+    const name = profile.apelido || profile.nome;
+    if (!confirm(`Excluir a conta de ${name}? O jogador e o histórico serão preservados.`)) return;
+    setBusy(true);
+    try { await deleteUser(profile.id); feedback("Usuário excluído."); await state.reload(); }
+    catch (err) { feedback(err instanceof Error ? err.message : "Não foi possível excluir o usuário."); }
+    finally { setBusy(false); }
   }
   async function changePassword(userId: string) {
     const password = prompt("Nova senha (mínimo 8 caracteres):");
@@ -272,6 +281,10 @@ export function SuperAdmin() {
                       Criar jogador para esta conta
                     </button>
                   )}
+                  <div className="user-danger-zone">
+                    <span><b>Excluir conta</b><small>Remove o acesso e preserva o jogador e o histórico.</small></span>
+                    <button type="button" className="mini danger" disabled={busy || profile.id === realProfile?.id} title={profile.id === realProfile?.id ? "Você não pode excluir a própria conta" : "Excluir usuário"} onClick={() => void removeUser(profile)}>EXCLUIR USUÁRIO</button>
+                  </div>
                   <button
                     type="button"
                     className="secondary user-password"
