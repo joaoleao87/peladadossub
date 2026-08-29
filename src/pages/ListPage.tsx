@@ -15,6 +15,7 @@ import {
   setParticipantGoals,
   setParticipantAssists,
   setListPhase,
+  setTemporaryMatchPosition,
   startPelada,
   respondPelada,
   voteMatchAward,
@@ -327,6 +328,20 @@ export function ListPage() {
                           }
                         >
                           Promover
+                        </button>
+                      )}
+                      {item.player?.posicao === "goleiro" && ["confirmado", "presente", "espera"].includes(item.status) && (
+                        <button
+                          type="button"
+                          className="mini secondary"
+                          onClick={() =>
+                            void run(
+                              () => setTemporaryMatchPosition(item.id, item.categoria === "goleiro" ? "linha" : "goleiro"),
+                              item.categoria === "goleiro" ? "Goleiro colocado temporariamente na linha." : "Jogador voltou para o gol.",
+                            )
+                          }
+                        >
+                          {item.categoria === "goleiro" ? "Na linha" : "Voltar ao gol"}
                         </button>
                       )}
                       <button
