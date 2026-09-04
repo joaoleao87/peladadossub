@@ -43,9 +43,10 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
       (item) => !members.some((member) => member.jogador_id === item.jogador_id),
     ),
     teamCount = Math.max(
-      Math.ceil(eligible.length / 4),
+      isAdmin ? Math.ceil(eligible.length / 4) : 0,
       ...members.map((member) => member.time),
-    );
+    ),
+    releasedTeams = game.sorteio_liberado ? (game.sorteio_times_liberados ?? 5) : 0;
   async function run(
     action: () => Promise<unknown>,
     message: string,
@@ -73,7 +74,7 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
           <small>SORTEIO</small>
           <h2>Times</h2>
         </span>
-        {isAdmin && <em>{game.sorteio_liberado ? "Liberado" : "Rascunho"}</em>}
+        {isAdmin && <em>{releasedTeams ? `${releasedTeams === 2 ? "2 times" : "Todos"} liberados` : "Rascunho"}</em>}
       </header>
       {isAdmin && (
         <div className="draw-actions">
@@ -95,24 +96,15 @@ export function TeamDraw({ game, participants, isAdmin, onChanged }: Props) {
             >
               {members.length ? "Sortear novamente" : "Gerar sorteio"}
             </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={!members.length}
-              onClick={() =>
-                void run(
-                  () => publishTeamDraw(game.id, !game.sorteio_liberado),
-                  game.sorteio_liberado
-                    ? "Sorteio ocultado."
-                    : "Sorteio liberado.",
-                  true,
-                )
-              }
-            >
-              {game.sorteio_liberado
-                ? "Ocultar dos jogadores"
-                : "Liberar para jogadores"}
+            <button type="button" className="secondary" disabled={!members.length || releasedTeams === 2} onClick={() => void run(() => publishTeamDraw(game.id, 2), "Dois primeiros times liberados.", true)}>
+              Liberar 2 primeiros
             </button>
+            <button type="button" className="secondary" disabled={!members.length || releasedTeams === 5} onClick={() => void run(() => publishTeamDraw(game.id, 5), "Todos os times liberados.", true)}>
+              Liberar todos
+            </button>
+            {releasedTeams > 0 && <button type="button" className="secondary" onClick={() => void run(() => publishTeamDraw(game.id, 0), "Sorteio ocultado.", true)}>
+              Ocultar dos jogadores
+            </button>}
         </div>
       )}
       {eligible.length ? (

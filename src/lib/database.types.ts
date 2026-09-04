@@ -79,6 +79,7 @@ export interface Pelada {
   lista_automatica: boolean;
   motivo_cancelamento?: string | null;
   sorteio_liberado?: boolean;
+  sorteio_times_liberados?: number;
   pelada_iniciada?: boolean;
 }
 export interface TeamMember {
