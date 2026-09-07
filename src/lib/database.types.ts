@@ -81,6 +81,7 @@ export interface Pelada {
   sorteio_liberado?: boolean;
   sorteio_times_liberados?: number;
   pelada_iniciada?: boolean;
+  votacao_encerrada_em?: string | null;
 }
 export interface TeamMember {
   pelada_id: string;

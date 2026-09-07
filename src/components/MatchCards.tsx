@@ -56,6 +56,7 @@ export function MatchCardsManager() {
         ? participantsInGame.filter(item => (item.gols ?? 0) === top && top > 0).map(item => ({ jogador_id: item.jogador_id, nome: name(item) }))
         : voteResults.filter(item => item.votos === top && top > 0).map(item => ({ jogador_id: item.jogador_id, nome: item.apelido || item.nome })),
       choice = choices[category] || winners[0]?.jogador_id || "", card = cards.find(item => item.categoria === category),
+      completesGame = !card && cards.length === categories.length - 1,
       unit = category === "artilheiro" ? (top === 1 ? "gol" : "gols") : category === "time_destaque" ? (top === 1 ? "vitória" : "vitórias") : (top === 1 ? "voto" : "votos");
     return <article className="card-manager-row" key={category}><div><h3>{title}</h3>
       {!winners.length ? <small>{category === "artilheiro" ? "Sem gols registrados nesta pelada." : category === "time_destaque" ? "Registre as vitórias dos times primeiro." : category === "goleiro_destaque" ? "Nenhum goleiro participou desta pelada." : "Sem votos. Escolha um participante."}</small>
@@ -63,7 +64,7 @@ export function MatchCardsManager() {
           : <small>{winners[0].nome} • {top} {unit}</small>}
       <select value={choice} onChange={event => setChoices(old => ({ ...old, [category]: event.target.value }))}><option value="">Escolha…</option>
         {((category === "artilheiro" || category === "time_destaque" || category === "goleiro_destaque") && winners.length ? winners : category === "time_destaque" ? [] : participantsInGame.map(item => ({ jogador_id: item.jogador_id, nome: name(item) }))).map(item => <option value={item.jogador_id} key={item.jogador_id}>{item.nome}</option>)}
-      </select><button disabled={!choice} onClick={() => void run(async () => { await generateMatchCard(id, category, choice); if (card?.imagem_path) await deleteMatchCardImage(card.imagem_path); }, "Card gerado como rascunho.")}>Gerar rascunho</button></div>
+      </select><button disabled={!choice} onClick={() => void run(async () => { await generateMatchCard(id, category, choice); if (card?.imagem_path) await deleteMatchCardImage(card.imagem_path); }, completesGame ? "Cards completos. Votação encerrada e próxima pelada criada." : "Card gerado como rascunho.")}>Gerar rascunho</button></div>
       {card && <div className="card-manager-preview">{card.imagem_path ? <img src={matchCardImageUrl(card.imagem_path)} alt={card.titulo} /> : <MatchAwardCard card={card} game={game} />}
         <nav><label className="upload-card">Substituir imagem<input type="file" accept="image/jpeg,image/png,image/webp" onChange={event => { const file = event.target.files?.[0]; if (file) void run(async () => { const old = card.imagem_path, path = await uploadMatchCardImage(card, file); await updateMatchCard(card, false, path); if (old) await deleteMatchCardImage(old); }, "Imagem substituída em rascunho."); }} /></label>
           {card.imagem_path && <button className="secondary" onClick={() => void run(async () => { await updateMatchCard(card, false, null); await deleteMatchCardImage(card.imagem_path!); }, "Card gerado restaurado.")}>Usar card gerado</button>}
