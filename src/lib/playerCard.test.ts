@@ -33,7 +33,7 @@ describe("overall automático", () => {
   it("usa os seis atributos específicos para goleiro", () => {
     const goalkeeper = { position: "GOL" as const, pace: 88, shooting: 85, passing: 88, dribbling: 90, defending: 38, physical: 88 };
     expect(calculatePlayerCardOverall(goalkeeper)).toBe(84);
-    expect(cardStats("GOL").map(([, label]) => label)).toEqual(["DIV", "HAN", "KIC", "REF", "SPE", "POS"]);
+    expect(cardStats("GOL").map(([, label]) => label)).toEqual(["ELA", "MAN", "CHU", "REF", "VEL", "POS"]);
   });
 
   it("só calcula quando posição e todos os atributos existem", () => {

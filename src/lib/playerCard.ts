@@ -20,8 +20,8 @@ export const CARD_STATS = [
 ] as const;
 
 export const GOALKEEPER_CARD_STATS = [
-  ["pace", "DIV"], ["shooting", "HAN"], ["passing", "KIC"],
-  ["dribbling", "REF"], ["defending", "SPE"], ["physical", "POS"],
+  ["pace", "ELA"], ["shooting", "MAN"], ["passing", "CHU"],
+  ["dribbling", "REF"], ["defending", "VEL"], ["physical", "POS"],
 ] as const;
 
 const POSITION_WEIGHTS = {
