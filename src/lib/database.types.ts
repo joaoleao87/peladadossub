@@ -22,7 +22,7 @@ export type ParticipantStatus =
   | "presente"
   | "faltou";
 export type PaymentStatus = "pendente" | "pago" | "isento" | "atrasado";
-export type VoteCategory = "destaque" | "surpresa" | "negativo";
+export type VoteCategory = "destaque" | "surpresa" | "negativo" | "goleiro_destaque";
 export type CardCategory = VoteCategory | "artilheiro" | "time_destaque" | "goleiro_destaque";
 
 export interface Profile {

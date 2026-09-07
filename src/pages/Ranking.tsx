@@ -100,8 +100,8 @@ export function Ranking() {
         ) : (
           <>
             <div className="ranking-awards">
-              {([['destaque','Destaque'],['surpresa','Surpresa'],['negativo','Quem quebrou mais']] as [VoteCategory,string][]).map(([category,label]) => (
-                <label key={category}>{label}<select value={votes.votes[category] ?? ""} onChange={(event) => void vote(() => voteMatchAward(game.id, category, event.target.value || null), "Destaque registrado.")}><option value="">Escolha um jogador</option>{targets.map((item) => <option value={item.jogador_id} key={item.jogador_id}>{playerName(item)}</option>)}</select></label>
+              {([['destaque','Destaque'],['surpresa','Surpresa'],['negativo','Quem quebrou mais'],['goleiro_destaque','Melhor goleiro']] as [VoteCategory,string][]).map(([category,label]) => (
+                <label key={category}>{label}<select value={votes.votes[category] ?? ""} onChange={(event) => void vote(() => voteMatchAward(game.id, category, event.target.value || null), "Voto registrado.")}><option value="">Escolha um jogador</option>{targets.filter(item => category !== 'goleiro_destaque' || item.categoria === 'goleiro').map((item) => <option value={item.jogador_id} key={item.jogador_id}>{playerName(item)}</option>)}</select></label>
               ))}
             </div>
           </>
@@ -131,6 +131,7 @@ export function Ranking() {
         {awardBoard("Destaque", "destaque")}
         {awardBoard("Surpresa", "surpresa")}
         {awardBoard("Quem quebrou mais", "negativo")}
+        {awardBoard("Melhor goleiro", "goleiro_destaque")}
       </div>
       <Toast message={toast} />
     </section>

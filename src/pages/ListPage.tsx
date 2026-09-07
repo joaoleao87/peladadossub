@@ -490,8 +490,8 @@ export function ListPage() {
       )}
       {started && canVote && (
         <p className="voting-notice voting-ready">
-          <b>Como votar:</b> escolha destaque, surpresa e quem quebrou mais no
-          final da lista.
+          <b>Como votar:</b> escolha destaque, surpresa, quem quebrou mais e o
+          melhor goleiro no final da lista.
         </p>
       )}
       {group("Confirmados", line)}
@@ -512,6 +512,7 @@ export function ListPage() {
                 ["destaque", "Destaque"],
                 ["surpresa", "Surpresa"],
                 ["negativo", "Quem quebrou mais"],
+                ["goleiro_destaque", "Melhor goleiro"],
               ] as [VoteCategory, string][]
             ).map(([category, label]) => (
               <label key={category}>
@@ -532,7 +533,7 @@ export function ListPage() {
                   }
                 >
                   <option value="">Não selecionado</option>
-                  {voteTargets.map((item) => (
+                  {voteTargets.filter(item => category !== "goleiro_destaque" || item.categoria === "goleiro").map((item) => (
                     <option value={item.jogador_id} key={item.jogador_id}>
                       {playerName(item)}
                     </option>
