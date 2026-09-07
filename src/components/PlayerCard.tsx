@@ -25,6 +25,10 @@ export function PlayerCard({ player, cardType = player.card_type, mode = "player
     <img className="player-card__template" src={CARD_TEMPLATES[cardType]} alt="" />
     <div className="player-card__photo" style={photoStyle}>
       {player.resolved_photo_url && <img src={player.resolved_photo_url} crossOrigin="anonymous" alt="" />}
+      <svg className="player-card__photo-frame" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path className="player-card__photo-frame-outer" d="M14 5 Q10 6 7 11 L2 20 Q1 22 1 27 L1 91 Q1 98 9 98 L91 98 Q99 98 99 90 L99 7 Q99 2 94 2 L22 2 Q18 2 14 5Z" />
+        <path className="player-card__photo-frame-inner" d="M15 7 Q11 8 9 12 L4 21 Q3 23 3 28 L3 89 Q3 95 10 95 L90 95 Q96 95 96 89 L96 8 Q96 5 93 5 L23 5 Q19 5 15 7Z" />
+      </svg>
     </div>
     <div className="player-card__rating"><strong>{value(player.overall)}</strong><span>{player.position || (mode === "admin" ? "POS" : "")}</span></div>
     <div className="player-card__identity" aria-label="Brasil, Pelada dos Sub">
