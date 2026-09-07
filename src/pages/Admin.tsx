@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ErrorState, Spinner, Toast } from "../components/Ui";
 import { PlayerManager } from "../components/PlayerManager";
 import { PlayerControlPanel } from "../components/PlayerControlPanel";
+import { PlayerCardsAdmin } from "../components/PlayerCardsAdmin";
 import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
@@ -14,7 +15,7 @@ import {
 import type { Pelada } from "../lib/database.types";
 
 export function Admin() {
-  const [tab, setTab] = useState<"pelada" | "jogadores" | "controle" | "notificacoes">("pelada"),
+  const [tab, setTab] = useState<"pelada" | "jogadores" | "controle" | "cartinhas" | "notificacoes">("pelada"),
     [toast, setToast] = useState("");
   const state = useLoad(async () => {
     const [summary, series] = await Promise.all([
@@ -94,7 +95,7 @@ export function Admin() {
       <p className="eyebrow">DIRETORIA</p>
       <h1>Admin</h1>
       <div className="tabs">
-        {(["pelada", "jogadores", "controle", "notificacoes"] as const).map((x) => (
+        {(["pelada", "jogadores", "controle", "cartinhas", "notificacoes"] as const).map((x) => (
           <button
             type="button"
             className={tab === x ? "active" : ""}
@@ -206,6 +207,7 @@ export function Admin() {
       )}
       {tab === "jogadores" && <PlayerManager />}
       {tab === "controle" && <PlayerControlPanel />}
+      {tab === "cartinhas" && <PlayerCardsAdmin />}
       <Toast message={toast} />
     </section>
   );

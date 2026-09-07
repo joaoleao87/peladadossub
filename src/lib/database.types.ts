@@ -25,6 +25,34 @@ export type PaymentStatus = "pendente" | "pago" | "isento" | "atrasado";
 export type VoteCategory = "destaque" | "surpresa" | "negativo" | "goleiro_destaque";
 export type CardCategory = VoteCategory | "artilheiro" | "time_destaque" | "goleiro_destaque";
 
+export type PlayerCardType = "normal" | "legendary";
+export type PlayerCardPosition = "GOL" | "FIXO" | "ALA" | "PIVO";
+
+export interface PlayerCardData {
+  id?: string;
+  player_id: string;
+  display_name: string | null;
+  position: PlayerCardPosition | null;
+  overall: number | null;
+  pace: number | null;
+  shooting: number | null;
+  passing: number | null;
+  dribbling: number | null;
+  defending: number | null;
+  physical: number | null;
+  card_type: PlayerCardType;
+  photo_url: string | null;
+  photo_scale: number;
+  photo_position_x: number;
+  photo_position_y: number;
+  created_at?: string;
+  updated_at?: string;
+  resolved_photo_url?: string | null;
+}
+
+export interface PlayerWithCard extends Player {
+  card: PlayerCardData | null;
+}
 export interface Profile {
   id: string;
   nome: string;
