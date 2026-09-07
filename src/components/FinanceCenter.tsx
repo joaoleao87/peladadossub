@@ -18,7 +18,12 @@ import {
 } from "../lib/api";
 import type { Payment } from "../lib/database.types";
 import { ExpensePanel } from "./ExpensePanel";
-import { calculateFinanceSummary, currentCompetence } from "../lib/finance";
+import {
+  calculateFinanceSummary,
+  currentCompetence,
+  filterAndSortPayments,
+  type PaymentStatusFilter,
+} from "../lib/finance";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "./Ui";
 
 type Tab = "resumo" | "mensalidades" | "avulsos" | "despesas" | "configuracoes";
@@ -29,6 +34,8 @@ const money = new Intl.NumberFormat("pt-BR", {
 export function FinanceCenter() {
   const [tab, setTab] = useState<Tab>("resumo"),
     [gameId, setGameId] = useState(""),
+    [paymentQuery, setPaymentQuery] = useState(""),
+    [paymentFilter, setPaymentFilter] = useState<PaymentStatusFilter>("todos"),
     [toast, setToast] = useState("");
   const month = currentCompetence();
   const monthLabel = new Date(`${month}-01T12:00`).toLocaleDateString("pt-BR", {
@@ -98,11 +105,33 @@ export function FinanceCenter() {
       "noopener,noreferrer",
     );
   }
-  const rows = (list: Payment[]) => (
+  const rows = (list: Payment[]) => {
+    const visiblePayments = filterAndSortPayments(list, paymentQuery, paymentFilter);
+    return (
     <div className="panel">
       <h2>Lançamentos</h2>
-      {list.length ? (
-        list.map((p) => (
+      <div className="payment-filters">
+        <label>
+          Buscar jogador
+          <input
+            type="search"
+            placeholder="Digite o nome"
+            value={paymentQuery}
+            onChange={(event) => setPaymentQuery(event.target.value)}
+          />
+        </label>
+        <label>
+          Situação
+          <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value as PaymentStatusFilter)}>
+            <option value="todos">Todos</option>
+            <option value="pago">Pagos</option>
+            <option value="em_aberto">Em aberto</option>
+            <option value="isento">Isentos</option>
+          </select>
+        </label>
+      </div>
+      {visiblePayments.length ? (
+        visiblePayments.map((p) => (
           <div className="payment-row" key={p.id}>
             <div>
               <b>
@@ -172,10 +201,11 @@ export function FinanceCenter() {
           </div>
         ))
       ) : (
-        <Empty title="Nenhum lançamento nesta seleção" />
+        <Empty title="Nenhum lançamento encontrado" />
       )}
     </div>
-  );
+    );
+  };
   return (
     <div>
       <div className="tabs finance-tabs">
