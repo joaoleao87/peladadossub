@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { PlayerCardData, PlayerCardType } from "../lib/database.types";
-import { CARD_LAYOUTS, CARD_STATS, CARD_TEMPLATES } from "../lib/playerCard";
+import { calculatePlayerCardOverall, CARD_LAYOUTS, cardStats, CARD_TEMPLATES } from "../lib/playerCard";
 import "./player-card.css";
 
 type Props = {
@@ -21,6 +21,7 @@ export function PlayerCard({ player, cardType = player.card_type, mode = "player
     height: `${layout.photo.height}%`,
   } as CSSProperties;
   const value = (entry: number | null) => entry ?? (mode === "admin" ? "—" : "");
+  const overall = calculatePlayerCardOverall(player);
   return <article className={`player-card player-card--${cardType} ${className}`} style={{ aspectRatio: layout.aspectRatio, color: layout.color }} aria-label={`Cartinha de ${player.display_name || "jogador"}`}>
     <img className="player-card__template" src={CARD_TEMPLATES[cardType]} alt="" />
     <div className="player-card__photo" style={photoStyle}>
@@ -30,14 +31,14 @@ export function PlayerCard({ player, cardType = player.card_type, mode = "player
         <path className="player-card__photo-frame-inner" d="M15 7 Q11 8 9 12 L4 21 Q3 23 3 28 L3 89 Q3 95 10 95 L90 95 Q96 95 96 89 L96 8 Q96 5 93 5 L23 5 Q19 5 15 7Z" />
       </svg>
     </div>
-    <div className="player-card__rating"><strong>{value(player.overall)}</strong><span>{player.position || (mode === "admin" ? "POS" : "")}</span></div>
+    <div className="player-card__rating"><strong>{value(overall)}</strong><span>{player.position || (mode === "admin" ? "POS" : "")}</span></div>
     <div className="player-card__identity" aria-label="Brasil, Pelada dos Sub">
       <span className="player-card__flag" aria-hidden="true"><i /></span>
       <img src="/cards/logo-time-sub.png" alt="" />
     </div>
     <strong className="player-card__name">{player.display_name || (mode === "admin" ? "NOME DO JOGADOR" : "")}</strong>
     <div className="player-card__stats">
-      {CARD_STATS.map(([key, label]) => <span key={key}><b>{value(player[key])}</b> {label}</span>)}
+      {cardStats(player.position).map(([key, label]) => <span key={key}><b>{value(player[key])}</b> {label}</span>)}
     </div>
   </article>;
 }

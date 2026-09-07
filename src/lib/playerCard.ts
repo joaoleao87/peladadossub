@@ -19,9 +19,34 @@ export const CARD_STATS = [
   ["dribbling", "DRI"], ["defending", "DEF"], ["physical", "FÍS"],
 ] as const;
 
+export const GOALKEEPER_CARD_STATS = [
+  ["pace", "DIV"], ["shooting", "HAN"], ["passing", "KIC"],
+  ["dribbling", "REF"], ["defending", "SPE"], ["physical", "POS"],
+] as const;
+
+const POSITION_WEIGHTS = {
+  GOL: [0.21, 0.21, 0.10, 0.24, 0.08, 0.16],
+  FIXO: [0.10, 0.05, 0.15, 0.10, 0.35, 0.25],
+  ALA: [0.22, 0.15, 0.18, 0.22, 0.08, 0.15],
+  PIVO: [0.15, 0.30, 0.13, 0.20, 0.05, 0.17],
+} as const;
+
+export function cardStats(position: PlayerCardData["position"]) {
+  return position === "GOL" ? GOALKEEPER_CARD_STATS : CARD_STATS;
+}
+
+export function calculatePlayerCardOverall(card: Pick<PlayerCardData, "position" | "pace" | "shooting" | "passing" | "dribbling" | "defending" | "physical">) {
+  if (!card.position) return null;
+  const values = [card.pace, card.shooting, card.passing, card.dribbling, card.defending, card.physical];
+  if (values.some(value => value == null)) return null;
+  const weights = POSITION_WEIGHTS[card.position];
+  const numericValues = values.map(Number);
+  return Math.max(1, Math.min(99, Math.round(numericValues.reduce((total, value, index) => total + value * weights[index], 0))));
+}
+
 export function playerCardStatus(card?: PlayerCardData | null) {
-  if (!card || [card.display_name, card.position, card.overall, card.pace, card.shooting, card.passing, card.dribbling, card.defending, card.physical].every(value => value == null || value === "")) return "not_configured" as const;
-  if ([card.display_name, card.position, card.overall, card.pace, card.shooting, card.passing, card.dribbling, card.defending, card.physical].some(value => value == null || value === "")) return "incomplete" as const;
+  if (!card || [card.display_name, card.position, card.pace, card.shooting, card.passing, card.dribbling, card.defending, card.physical].every(value => value == null || value === "")) return "not_configured" as const;
+  if ([card.display_name, card.position, card.pace, card.shooting, card.passing, card.dribbling, card.defending, card.physical].some(value => value == null || value === "")) return "incomplete" as const;
   return "ready" as const;
 }
 
@@ -108,7 +133,7 @@ export async function renderPlayerCardPng(card: PlayerCardData) {
   context.fillStyle = layout.color;
   context.textAlign = "center";
   context.font = `900 ${Math.round(width * .09)}px Impact, sans-serif`;
-  context.fillText(String(card.overall), width * .22, height * .285);
+  context.fillText(String(calculatePlayerCardOverall(card)), width * .22, height * .285);
   context.font = `800 ${Math.round(width * .035)}px Arial, sans-serif`;
   context.fillText(card.position!, width * .22, height * .322);
   const flagX = width * .18, flagY = height * .34, flagW = width * .09, flagH = height * .037;
@@ -132,7 +157,7 @@ export async function renderPlayerCardPng(card: PlayerCardData) {
   context.font = `900 ${Math.round(width * .052)}px Impact, sans-serif`;
   context.fillText(card.display_name!.toUpperCase(), width * .5, height * .595);
   context.font = `800 ${Math.round(width * .032)}px Arial, sans-serif`;
-  CARD_STATS.forEach(([key, label], index) => {
+  cardStats(card.position).forEach(([key, label], index) => {
     const column = index < 3 ? .35 : .65, row = index % 3;
     context.fillText(`${card[key]} ${label}`, width * column, height * (.65 + row * .042));
   });
