@@ -5,11 +5,13 @@ export const CARD_TEMPLATES: Record<PlayerCardType, string> = {
   legendary: "/cards/carta-lendaria.png",
 };
 
+export const CARD_TEAM_LOGO = "/cards/logo-time-sub.png";
+
 export const CARD_POSITIONS = ["GOL", "FIXO", "ALA", "PIVO"] as const;
 
 export const CARD_LAYOUTS = {
-  normal: { aspectRatio: 1060 / 1484, color: "#261805", photo: { left: 17, top: 19, width: 68, height: 45 } },
-  legendary: { aspectRatio: 1024 / 1536, color: "#281806", photo: { left: 16, top: 18, width: 70, height: 45 } },
+  normal: { aspectRatio: 1060 / 1484, color: "#261805", photo: { left: 32, top: 20, width: 53, height: 36 } },
+  legendary: { aspectRatio: 1024 / 1536, color: "#281806", photo: { left: 32, top: 20, width: 53, height: 36 } },
 } as const;
 
 export const CARD_STATS = [
@@ -49,6 +51,7 @@ export async function renderPlayerCardPng(card: PlayerCardData) {
   if (!context) throw new Error("Não foi possível gerar a cartinha.");
   const layout = CARD_LAYOUTS[type], width = canvas.width, height = canvas.height;
   context.drawImage(template, 0, 0, width, height);
+  const teamLogoPromise = loadImage(CARD_TEAM_LOGO);
   if (card.resolved_photo_url) {
     const photo = await loadImage(card.resolved_photo_url);
     const area = { x: width * layout.photo.left / 100, y: height * layout.photo.top / 100, w: width * layout.photo.width / 100, h: height * layout.photo.height / 100 },
@@ -58,33 +61,57 @@ export async function renderPlayerCardPng(card: PlayerCardData) {
     photoCanvas.width = width; photoCanvas.height = height;
     if (!photoContext) throw new Error("Não foi possível compor a foto.");
     photoContext.save();
-    const gradient = photoContext.createLinearGradient(0, area.y, 0, area.y + area.h);
-    gradient.addColorStop(0, "#000");
-    gradient.addColorStop(.78, "#000");
-    gradient.addColorStop(1, "transparent");
-    photoContext.beginPath(); photoContext.rect(area.x, area.y, area.w, area.h); photoContext.clip();
-    photoContext.drawImage(photo, area.x + (area.w - drawW) / 2 + area.w * Number(card.photo_position_x) / 100, area.y + (area.h - drawH) / 2 + area.h * Number(card.photo_position_y) / 100, drawW, drawH);
-    photoContext.globalCompositeOperation = "destination-in";
-    photoContext.fillStyle = gradient;
+    const cut = width * .018;
+    photoContext.beginPath();
+    photoContext.moveTo(area.x + cut, area.y);
+    photoContext.lineTo(area.x + area.w, area.y);
+    photoContext.lineTo(area.x + area.w, area.y + area.h - cut);
+    photoContext.lineTo(area.x + area.w - cut, area.y + area.h);
+    photoContext.lineTo(area.x, area.y + area.h);
+    photoContext.lineTo(area.x, area.y + cut);
+    photoContext.closePath();
+    photoContext.clip();
+    photoContext.fillStyle = "#171914";
     photoContext.fillRect(area.x, area.y, area.w, area.h);
+    photoContext.drawImage(photo, area.x + (area.w - drawW) / 2 + area.w * Number(card.photo_position_x) / 100, area.y + (area.h - drawH) / 2 + area.h * Number(card.photo_position_y) / 100, drawW, drawH);
     photoContext.restore();
-    context.save();
-    context.globalCompositeOperation = "multiply"; context.globalAlpha = .96;
     context.drawImage(photoCanvas, 0, 0);
+    context.save();
+    context.strokeStyle = "#b77a14";
+    context.lineWidth = width * .006;
+    context.strokeRect(area.x, area.y, area.w, area.h);
     context.restore();
   }
   context.fillStyle = layout.color;
   context.textAlign = "center";
   context.font = `900 ${Math.round(width * .09)}px Impact, sans-serif`;
-  context.fillText(String(card.overall), width * .22, height * .18);
+  context.fillText(String(card.overall), width * .22, height * .285);
   context.font = `800 ${Math.round(width * .035)}px Arial, sans-serif`;
-  context.fillText(card.position!, width * .22, height * .215);
+  context.fillText(card.position!, width * .22, height * .322);
+  const flagX = width * .18, flagY = height * .34, flagW = width * .09, flagH = height * .037;
+  context.fillStyle = "#199447";
+  context.fillRect(flagX, flagY, flagW, flagH);
+  context.fillStyle = "#f7d117";
+  context.beginPath();
+  context.moveTo(flagX + flagW * .5, flagY + flagH * .1);
+  context.lineTo(flagX + flagW * .9, flagY + flagH * .5);
+  context.lineTo(flagX + flagW * .5, flagY + flagH * .9);
+  context.lineTo(flagX + flagW * .1, flagY + flagH * .5);
+  context.closePath();
+  context.fill();
+  context.fillStyle = "#244ca5";
+  context.beginPath();
+  context.arc(flagX + flagW * .5, flagY + flagH * .5, flagH * .22, 0, Math.PI * 2);
+  context.fill();
+  const teamLogo = await teamLogoPromise, logoW = width * .095, logoH = logoW * teamLogo.naturalHeight / teamLogo.naturalWidth;
+  context.drawImage(teamLogo, width * .225 - logoW / 2, height * .39, logoW, logoH);
+  context.fillStyle = layout.color;
   context.font = `900 ${Math.round(width * .052)}px Impact, sans-serif`;
-  context.fillText(card.display_name!.toUpperCase(), width * .5, height * .655);
+  context.fillText(card.display_name!.toUpperCase(), width * .5, height * .595);
   context.font = `800 ${Math.round(width * .032)}px Arial, sans-serif`;
   CARD_STATS.forEach(([key, label], index) => {
     const column = index < 3 ? .35 : .65, row = index % 3;
-    context.fillText(`${card[key]} ${label}`, width * column, height * (.715 + row * .045));
+    context.fillText(`${card[key]} ${label}`, width * column, height * (.65 + row * .042));
   });
   return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível exportar a cartinha.")), "image/png"));
 }

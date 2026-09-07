@@ -27,6 +27,10 @@ export function PlayerCard({ player, cardType = player.card_type, mode = "player
       {player.resolved_photo_url && <img src={player.resolved_photo_url} crossOrigin="anonymous" alt="" />}
     </div>
     <div className="player-card__rating"><strong>{value(player.overall)}</strong><span>{player.position || (mode === "admin" ? "POS" : "")}</span></div>
+    <div className="player-card__identity" aria-label="Brasil, Pelada dos Sub">
+      <span className="player-card__flag" aria-hidden="true"><i /></span>
+      <img src="/cards/logo-time-sub.png" alt="" />
+    </div>
     <strong className="player-card__name">{player.display_name || (mode === "admin" ? "NOME DO JOGADOR" : "")}</strong>
     <div className="player-card__stats">
       {CARD_STATS.map(([key, label]) => <span key={key}><b>{value(player[key])}</b> {label}</span>)}
