@@ -7,6 +7,7 @@ import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
   allPlayers,
+  controllablePeladas,
   homeStats,
   leavePelada,
   myLinkRequest,
@@ -130,7 +131,7 @@ export function Dashboard() {
   const { profile, preview } = useAuth(),
     isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     state = useLoad(async () => {
-      const [game, loadedPlayer, stats] = await Promise.all([nextPelada(), myPlayer(),homeStats(profile!.id)]),
+      const [game, loadedPlayer, stats, controls] = await Promise.all([nextPelada(), myPlayer(),homeStats(profile!.id),controllablePeladas()]),
         player=preview==='sem_vinculo'?null:loadedPlayer,
         [list, players, request, requests] = await Promise.all([
           game ? participants(game.id) : [],
@@ -146,6 +147,7 @@ export function Dashboard() {
         request,
         requests,
         stats,
+        controls,
       };
     }, [profile?.id, profile?.role, preview]),
     [toast, setToast] = useState(""),
@@ -215,6 +217,12 @@ export function Dashboard() {
       ))}
     </section>
   );
+  const operatorLink = Boolean(state.data?.controls.length) && (
+    <Link className="section-link vote-shortcut" to="/controle-partida">
+      <span>Controlar partida e marcações</span>
+      <ArrowRight />
+    </Link>
+  );
   if (!game)
     return (
       <section>
@@ -226,6 +234,7 @@ export function Dashboard() {
         <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
         {linkPanel}
         {adminRequests}
+        {operatorLink}
         <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
@@ -363,6 +372,7 @@ export function Dashboard() {
       <div className="stats home-stats"><div><strong>{state.data?.stats.peladas??0}</strong><span>Peladas</span></div><div><strong>{state.data?.stats.gols??0}</strong><span>Gols</span></div><div><strong>{state.data?.stats.destaques??0}</strong><span>Destaques</span></div></div>
       {linkPanel}
       {adminRequests}
+      {operatorLink}
       <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
       <article className="game-card">
         <div className="game-card-top">

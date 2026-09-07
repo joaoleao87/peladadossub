@@ -81,6 +81,62 @@ export interface MatchCard {
   imagem_path: string | null;
   liberado: boolean;
 }
+
+export type ControlledMatchStatus = "CREATED" | "RUNNING" | "FINISHED";
+export type MatchEventType = "MATCH_STARTED" | "GOAL" | "HIGHLIGHT" | "SUBSTITUTION" | "MATCH_FINISHED";
+export interface MatchControl {
+  pelada_id: string;
+  status: "CREATED" | "READY" | "RUNNING" | "FINISHED";
+  active_match_id: string | null;
+  team_queue: number[];
+  device_camera_online: boolean;
+  recording_session_id: string | null;
+  recording_started_at: string | null;
+  updated_at: string;
+}
+export interface ControlledMatch {
+  id: string;
+  pelada_id: string;
+  sequence_number: number;
+  team_home: number;
+  team_away: number;
+  score_home: number;
+  score_away: number;
+  duration_ms: number;
+  started_at: string | null;
+  ended_at: string | null;
+  status: ControlledMatchStatus;
+}
+export interface ControlledMatchEvent {
+  id: string;
+  client_event_id: string;
+  pelada_id: string;
+  match_id: string;
+  admin_id: string;
+  type: MatchEventType;
+  team_id: number | null;
+  player_id: string | null;
+  assist_player_id: string | null;
+  corrected_created_at: string;
+  match_clock_ms: number;
+  recording_offset_ms: number | null;
+  metadata: Record<string, unknown>;
+  sync_status: "LOCAL" | "PENDING" | "SYNCED" | "ERROR";
+  status: "ACTIVE" | "CANCELLED";
+}
+export interface MatchOperator {
+  pelada_id: string;
+  user_id: string;
+  autorizado_por: string;
+  created_at: string;
+}
+export interface MatchControlSnapshot {
+  control: MatchControl;
+  match: ControlledMatch;
+  events: ControlledMatchEvent[];
+  teams: TeamMember[];
+  participants: Participant[];
+}
 export interface Player {
   id: string;
   nome: string;

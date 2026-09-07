@@ -12,10 +12,11 @@ import {
   saveSeries,
   sendMassNotification,
 } from "../lib/api";
+import { MatchControlPage } from "./MatchControl";
 import type { Pelada } from "../lib/database.types";
 
 export function Admin() {
-  const [tab, setTab] = useState<"pelada" | "jogadores" | "controle" | "cartinhas" | "notificacoes">("pelada"),
+  const [tab, setTab] = useState<"pelada" | "partida" | "jogadores" | "controle" | "cartinhas" | "notificacoes">("pelada"),
     [toast, setToast] = useState("");
   const state = useLoad(async () => {
     const [summary, series] = await Promise.all([
@@ -95,7 +96,7 @@ export function Admin() {
       <p className="eyebrow">DIRETORIA</p>
       <h1>Admin</h1>
       <div className="tabs">
-        {(["pelada", "jogadores", "controle", "cartinhas", "notificacoes"] as const).map((x) => (
+        {(["pelada", "partida", "jogadores", "controle", "cartinhas", "notificacoes"] as const).map((x) => (
           <button
             type="button"
             className={tab === x ? "active" : ""}
@@ -207,6 +208,7 @@ export function Admin() {
       )}
       {tab === "jogadores" && <PlayerManager />}
       {tab === "controle" && <PlayerControlPanel />}
+      {tab === "partida" && <MatchControlPage embedded />}
       {tab === "cartinhas" && <PlayerCardsAdmin />}
       <Toast message={toast} />
     </section>
