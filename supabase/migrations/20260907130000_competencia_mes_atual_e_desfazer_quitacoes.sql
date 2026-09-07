@@ -1,11 +1,8 @@
 -- Corrige cobranças criadas para outubro de 2026 pelo seletor que iniciava no mês seguinte.
--- O backup e a função de restauração tornam a migração reversível.
+-- Todos os registros afetados são preservados integralmente para permitir restauração.
 create table if not exists public.financeiro_competencia_backup (
   pagamento_id uuid primary key,
-  competencia date not null,
-  referencia text,
-  data_vencimento date,
-  updated_at timestamptz not null,
+  dados jsonb not null,
   competencia_destino date not null,
   migrated_at timestamptz not null default now()
 );
@@ -19,29 +16,57 @@ declare
 begin
   if v_destino = v_origem then return; end if;
 
-  if exists (
-    select 1
-      from public.pagamentos origem
-      join public.pagamentos destino
-        on destino.tipo = 'mensalidade'
-       and destino.competencia = v_destino
-       and (
-         (origem.jogador_id is not null and destino.jogador_id = origem.jogador_id)
-         or (origem.jogador_id is null and origem.user_id is not null and destino.user_id = origem.user_id)
+  -- Guarda as cobranças de outubro e também as cobranças atuais que serão
+  -- consolidadas, possibilitando restaurar exatamente o estado anterior.
+  insert into public.financeiro_competencia_backup (pagamento_id, dados, competencia_destino)
+  select p.id, to_jsonb(p), v_destino
+    from public.pagamentos p
+   where p.tipo = 'mensalidade'
+     and (
+       p.competencia = v_origem
+       or (
+         p.competencia = v_destino
+         and exists (
+           select 1 from public.pagamentos origem
+            where origem.tipo = 'mensalidade'
+              and origem.competencia = v_origem
+              and (
+                (origem.jogador_id is not null and origem.jogador_id = p.jogador_id)
+                or (origem.jogador_id is null and origem.user_id is not null and origem.user_id = p.user_id)
+              )
+         )
        )
-     where origem.tipo = 'mensalidade'
-       and origem.competencia = v_origem
-  ) then
-    raise exception 'Migração de outubro cancelada: já existem mensalidades para a competência atual';
-  end if;
-
-  insert into public.financeiro_competencia_backup (
-    pagamento_id, competencia, referencia, data_vencimento, updated_at, competencia_destino
-  )
-  select id, competencia, referencia, data_vencimento, updated_at, v_destino
-    from public.pagamentos
-   where tipo = 'mensalidade' and competencia = v_origem
+     )
   on conflict (pagamento_id) do nothing;
+
+  -- Se a cobrança correta do mês atual já estiver paga, preserva na cobrança
+  -- de outubro o pagamento e seus metadados antes de consolidar as duplicatas.
+  update public.pagamentos origem
+     set status = case when destino.status = 'pago' then destino.status else origem.status end,
+         data_pagamento = case when destino.status = 'pago' then destino.data_pagamento else origem.data_pagamento end,
+         metodo_pagamento = case when destino.status = 'pago' then destino.metodo_pagamento else origem.metodo_pagamento end,
+         comprovante_path = coalesce(origem.comprovante_path, destino.comprovante_path),
+         observacao = coalesce(origem.observacao, destino.observacao),
+         updated_at = now()
+    from public.pagamentos destino
+   where origem.tipo = 'mensalidade' and origem.competencia = v_origem
+     and destino.tipo = 'mensalidade' and destino.competencia = v_destino
+     and (
+       (origem.jogador_id is not null and destino.jogador_id = origem.jogador_id)
+       or (origem.jogador_id is null and origem.user_id is not null and destino.user_id = origem.user_id)
+     );
+
+  -- Remove somente as duplicatas já copiadas integralmente para o backup.
+  delete from public.pagamentos destino
+   where destino.tipo = 'mensalidade' and destino.competencia = v_destino
+     and exists (
+       select 1 from public.pagamentos origem
+        where origem.tipo = 'mensalidade' and origem.competencia = v_origem
+          and (
+            (origem.jogador_id is not null and origem.jogador_id = destino.jogador_id)
+            or (origem.jogador_id is null and origem.user_id is not null and origem.user_id = destino.user_id)
+          )
+     );
 
   update public.pagamentos
      set competencia = v_destino,
@@ -56,29 +81,26 @@ returns integer language plpgsql security definer set search_path = '' as $$
 declare v_count integer;
 begin
   if not public.is_admin() then raise exception 'Acesso negado'; end if;
-  if exists (
-    select 1
-      from public.financeiro_competencia_backup b
-      join public.pagamentos origem on origem.id = b.pagamento_id
-      join public.pagamentos conflito
-        on conflito.id <> origem.id
-       and conflito.tipo = 'mensalidade'
-       and conflito.competencia = b.competencia
-       and (
-         (origem.jogador_id is not null and conflito.jogador_id = origem.jogador_id)
-         or (origem.jogador_id is null and origem.user_id is not null and conflito.user_id = origem.user_id)
-       )
-  ) then
-    raise exception 'Restauração cancelada: existem cobranças conflitantes em outubro';
+  if not exists (select 1 from public.financeiro_competencia_backup) then
+    return 0;
   end if;
 
-  update public.pagamentos p
-     set competencia = b.competencia,
-         referencia = b.referencia,
-         data_vencimento = b.data_vencimento,
-         updated_at = b.updated_at
-    from public.financeiro_competencia_backup b
-   where p.id = b.pagamento_id and p.competencia = b.competencia_destino;
+  delete from public.pagamentos p
+   using public.financeiro_competencia_backup b
+   where p.id = b.pagamento_id
+      or (
+        p.tipo = 'mensalidade'
+        and p.competencia in (b.competencia_destino, date '2026-10-01')
+        and (
+          (p.jogador_id is not null and p.jogador_id = (b.dados->>'jogador_id')::uuid)
+          or (p.jogador_id is null and p.user_id is not null and p.user_id = (b.dados->>'user_id')::uuid)
+        )
+      );
+
+  insert into public.pagamentos
+  select (jsonb_populate_record(null::public.pagamentos, b.dados)).*
+    from public.financeiro_competencia_backup b;
+
   get diagnostics v_count = row_count;
   return v_count;
 end $$;
