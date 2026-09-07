@@ -8,6 +8,7 @@ import {
   payments,
   peladasHistory,
   receiptUrl,
+  reopenMonthlyCharges,
   refreshLatePayments,
   saveFinanceConfig,
   settleMonthlyCharges,
@@ -17,24 +18,23 @@ import {
 } from "../lib/api";
 import type { Payment } from "../lib/database.types";
 import { ExpensePanel } from "./ExpensePanel";
-import { calculateFinanceSummary } from "../lib/finance";
+import { calculateFinanceSummary, currentCompetence } from "../lib/finance";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "./Ui";
 
 type Tab = "resumo" | "mensalidades" | "avulsos" | "despesas" | "configuracoes";
 const money = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }),
-  nextMonth = () => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1, 1);
-    return d.toISOString().slice(0, 7);
-  };
+  });
 export function FinanceCenter() {
   const [tab, setTab] = useState<Tab>("resumo"),
-    [month, setMonth] = useState(nextMonth()),
     [gameId, setGameId] = useState(""),
     [toast, setToast] = useState("");
+  const month = currentCompetence();
+  const monthLabel = new Date(`${month}-01T12:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
   const state = useLoad(async () => {
     await refreshLatePayments();
     const [series, items, games, costs] = await Promise.all([
@@ -154,6 +154,20 @@ export function FinanceCenter() {
                   QUITAR
                 </button>
               )}
+              {p.status === "pago" && (
+                <button
+                  className="mini secondary"
+                  onClick={() =>
+                    confirm("Desfazer a quitação deste pagamento?") &&
+                    run(
+                      () => updatePayment(p.id, "pendente"),
+                      "Quitação desfeita.",
+                    )
+                  }
+                >
+                  DESFAZER
+                </button>
+              )}
             </div>
           </div>
         ))
@@ -224,15 +238,8 @@ export function FinanceCenter() {
           ) : (
             <>
               <div className="panel form-grid">
-                <h2>Mensalidades por mês</h2>
-                <label className="wide">
-                  Competência
-                  <input
-                    type="month"
-                    value={month}
-                    onChange={(e) => setMonth(e.target.value)}
-                  />
-                </label>
+                <h2>Mensalidades do mês atual</h2>
+                <p className="wide">Competência: <strong>{monthLabel}</strong></p>
                 <button
                   onClick={() =>
                     run(
@@ -256,6 +263,18 @@ export function FinanceCenter() {
                   }
                 >
                   QUITAR MÊS
+                </button>
+                <button
+                  className="secondary wide"
+                  onClick={() =>
+                    confirm("Desfazer as quitações das mensalidades deste mês?") &&
+                    run(
+                      () => reopenMonthlyCharges(`${month}-01`),
+                      "Quitações do mês desfeitas.",
+                    )
+                  }
+                >
+                  DESFAZER QUITAÇÕES DO MÊS
                 </button>
                 <small className="wide">
                   Gerar cria uma cobrança para cada mensalista não isento.
