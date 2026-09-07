@@ -16,7 +16,7 @@ create policy pelada_times_read on public.pelada_times for select to authenticat
   ));
 
 drop function if exists public.publicar_sorteio_times(uuid, boolean);
-create function public.publicar_sorteio_times(
+create or replace function public.publicar_sorteio_times(
   p_pelada_id uuid,
   p_times integer
 ) returns void language plpgsql security definer set search_path='' as $$
