@@ -154,9 +154,9 @@ export async function renderPlayerCardPng(card: PlayerCardData) {
   const teamLogo = await teamLogoPromise, logoW = width * .095, logoH = logoW * teamLogo.naturalHeight / teamLogo.naturalWidth;
   context.drawImage(teamLogo, width * .225 - logoW / 2, height * .39, logoW, logoH);
   context.fillStyle = layout.color;
-  context.font = `900 ${Math.round(width * .052)}px Impact, sans-serif`;
+  context.font = `900 ${Math.round(width * .065)}px Impact, sans-serif`;
   context.fillText(card.display_name!.toUpperCase(), width * .5, height * .595);
-  context.font = `800 ${Math.round(width * .032)}px Arial, sans-serif`;
+  context.font = `800 ${Math.round(width * .041)}px Arial, sans-serif`;
   cardStats(card.position).forEach(([key, label], index) => {
     const column = index < 3 ? .35 : .65, row = index % 3;
     context.fillText(`${card[key]} ${label}`, width * column, height * (.65 + row * .042));
