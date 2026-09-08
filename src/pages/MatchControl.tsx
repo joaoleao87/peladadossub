@@ -1,21 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { allProfiles, authorizeMatchOperator, controllablePeladas, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
+import { allProfiles, attributeMatchGoal, authorizeMatchOperator, controllablePeladas, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import { useLoad } from "../hooks/useLoad";
 import { supabase } from "../lib/supabase";
 import { nativeMatchControls } from "../lib/nativeMatchControls";
 import { enqueueMatchCommand, flushMatchCommands, matchDeviceId, pendingMatchCommands } from "../lib/matchOffline";
-import type { MatchControlSnapshot, Profile } from "../lib/database.types";
+import type { ControlledMatchEvent, MatchControlSnapshot, Profile, TeamMember } from "../lib/database.types";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import "./match-control.css";
 
 const eventLabels: Record<string,string> = { MATCH_STARTED:"Partida iniciada",GOAL:"Gol",HIGHLIGHT:"Lance importante",SUBSTITUTION:"Substituição",MATCH_FINISHED:"Partida finalizada" };
 const pad = (value:number) => String(value).padStart(2,"0");
 const formatClock = (ms:number) => `${pad(Math.floor(ms/60000))}:${pad(Math.floor(ms%60000/1000))}`;
+const formatEventTime = (value:string) => new Date(value).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 const playerName = (snapshot:MatchControlSnapshot,id:string) => {
   const item=snapshot.participants.find(row=>row.jogador_id===id);
   return item?.player?.apelido||item?.player?.nome||"Jogador";
 };
+
+function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players:TeamMember[];onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>}) {
+  const [scorer,setScorer]=useState(event.player_id??""),[assist,setAssist]=useState(event.assist_player_id??""),[busy,setBusy]=useState(false);
+  if(event.status==="CANCELLED")return null;
+  async function save(){if(!scorer)return;setBusy(true);try{await onSaved(event.id,scorer,assist||null)}finally{setBusy(false)}}
+  return <details className="goal-details" open={!event.player_id}>
+    <summary>{event.player_id?"Editar autor e assistência":"Atribuir autor do gol"}</summary>
+    <div>
+      <select aria-label="Autor do gol" value={scorer} onChange={item=>setScorer(item.target.value)}><option value="">Quem marcou?</option>{players.map(player=><option key={player.jogador_id} value={player.jogador_id}>{player.player?.apelido||player.player?.nome}</option>)}</select>
+      <select aria-label="Assistência do gol" value={assist} onChange={item=>setAssist(item.target.value)}><option value="">Sem assistência</option>{players.filter(player=>player.jogador_id!==scorer).map(player=><option key={player.jogador_id} value={player.jogador_id}>{player.player?.apelido||player.player?.nome}</option>)}</select>
+      <button className="mini" type="button" disabled={!scorer||busy} onClick={()=>void save()}>{busy?"SALVANDO…":"SALVAR GOL"}</button>
+    </div>
+  </details>
+}
 
 function OperatorAccess({peladaId}:{peladaId:string}) {
   const state=useLoad(async()=>{const[profiles,operators]=await Promise.all([allProfiles(),matchOperators(peladaId)]);return{profiles,operators}},peladaId);
@@ -54,8 +69,8 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   },[reload]);
   const addEvent=useCallback((type:"GOAL"|"HIGHLIGHT",team:number|null)=>{
     if(!match)return;const id=crypto.randomUUID(),occurred=correctedNow();
-    return run("registrar_evento_partida",{p_match_id:match.id,p_client_event_id:id,p_type:type,p_team_id:team,p_occurred_at:occurred,p_match_clock_ms:Math.round(clock),p_metadata:{}},type==="GOAL"?"Gol registrado.":"Lance importante marcado.",()=>{if(type==="GOAL"){if(team===match.team_home)match.score_home++;else match.score_away++}void reload()});
-  },[clock,match,run,reload,correctedNow]);
+    return run("registrar_evento_partida",{p_match_id:match.id,p_client_event_id:id,p_type:type,p_team_id:team,p_occurred_at:occurred,p_match_clock_ms:0,p_metadata:{}},type==="GOAL"?"Gol registrado.":"Lance importante marcado.",()=>{if(type==="GOAL"){if(team===match.team_home)match.score_home++;else match.score_away++}void reload()});
+  },[match,run,reload,correctedNow]);
   useEffect(()=>{if(!match||!nativeMatchControls.available)return;const nativeState={title:"Time "+match.team_home+" × Time "+match.team_away,score:match.score_home+" × "+match.score_away,subtitle:"Partida "+match.sequence_number,remainingMs:nativeSecond*1000,running:match.status==="RUNNING"};const action=nativeStarted.current?nativeMatchControls.update(nativeState):nativeMatchControls.start(nativeState);nativeStarted.current=true;void action.catch(error=>setToast(error instanceof Error?error.message:"Não foi possível ativar os controles nativos."))},[match,nativeSecond]);
   useEffect(()=>()=>{if(nativeMatchControls.available)void nativeMatchControls.stop().catch(()=>undefined)},[]);
   useEffect(()=>{if(!match||!nativeMatchControls.available)return;let handle:{remove:()=>Promise<void>}|undefined;void nativeMatchControls.onAction(action=>{if(action==="GOAL_HOME")void addEvent("GOAL",match.team_home);if(action==="GOAL_AWAY")void addEvent("GOAL",match.team_away);if(action==="HIGHLIGHT")void addEvent("HIGHLIGHT",null);if(action==="UNDO")void run("desfazer_evento_partida",{p_match_id:match.id},"Último evento desfeito.")}).then(value=>handle=value);return()=>{void handle?.remove()}},[match,addEvent,run]);
@@ -66,7 +81,8 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   if(!snapshot||!match)return <Empty title="Controle não inicializado"/>;
   const activeTeams=new Set([match.team_home,match.team_away]),outPlayers=snapshot.teams.filter(member=>activeTeams.has(member.time)),incoming=snapshot.participants.filter(item=>["confirmado","presente"].includes(item.status)&&item.jogador_id!==outId);
   const matchId=match.id;
-  async function substitute(){if(!outId||!inId)return;await run("substituir_jogador_partida",{p_match_id:matchId,p_jogador_sai:outId,p_jogador_entra:inId,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:Math.round(clock)},"Substituição registrada.");setOutId("");setInId("")}
+  async function substitute(){if(!outId||!inId)return;await run("substituir_jogador_partida",{p_match_id:matchId,p_jogador_sai:outId,p_jogador_entra:inId,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:0},"Substituição registrada.");setOutId("");setInId("")}
+  async function saveGoal(eventId:string,playerId:string,assistId:string|null){setBusy(true);try{await attributeMatchGoal(eventId,playerId,assistId);setToast("Gol atribuído ao jogador.");await reload()}catch(error){setToast(error instanceof Error?error.message:"Não foi possível atribuir o gol.")}finally{setBusy(false);setTimeout(()=>setToast(""),3500)}}
   return <section className="match-control">
     <header><button type="button" className="link" onClick={onBack}>← VOLTAR</button><span className={snapshot.control.device_camera_online?"camera-online":"camera-offline"}>{snapshot.control.device_camera_online?"● CÂMERA GRAVANDO":"○ CÂMERA DESCONECTADA"}</span></header>
     <p className="eyebrow">FUTSAL • PARTIDA {match.sequence_number}</p>
@@ -78,10 +94,10 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_away)}>⚽ GOL TIME {match.team_away}</button>
       <button className="highlight" disabled={busy} onClick={()=>void addEvent("HIGHLIGHT",null)}>★ LANCE IMPORTANTE</button>
       <button className="secondary" disabled={busy} onClick={()=>void run("desfazer_evento_partida",{p_match_id:match.id},"Último evento desfeito.")}>↶ DESFAZER</button>
-      <button className="danger" disabled={busy} onClick={()=>confirm("Finalizar esta partida e chamar os próximos times?")&&void run("finalizar_partida_controlada",{p_match_id:match.id,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:Math.round(clock)},"Partida finalizada. Próximos times chamados.")}>■ FINALIZAR PARTIDA</button>
+      <button className="danger" disabled={busy} onClick={()=>confirm("Finalizar esta partida e chamar os próximos times?")&&void run("finalizar_partida_controlada",{p_match_id:match.id,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:0},"Partida finalizada. Próximos times chamados.")}>■ FINALIZAR PARTIDA</button>
     </div>}
     <details className="match-substitution panel"><summary>Substituir jogadores</summary><p>Pode ser usado antes ou durante a partida.</p><div><label>Sai<select value={outId} onChange={event=>setOutId(event.target.value)}><option value="">Selecione</option>{outPlayers.map(member=><option value={member.jogador_id} key={member.jogador_id}>Time {member.time} • {member.player?.apelido||member.player?.nome}</option>)}</select></label><label>Entra<select value={inId} onChange={event=>setInId(event.target.value)}><option value="">Selecione</option>{incoming.map(item=><option value={item.jogador_id} key={item.jogador_id}>{playerName(snapshot,item.jogador_id)}</option>)}</select></label><button disabled={!outId||!inId||busy} onClick={()=>void substitute()}>CONFIRMAR TROCA</button></div></details>
-    <section className="match-events panel"><h3>Eventos</h3>{snapshot.events.length?snapshot.events.map(event=><div className={event.status==="CANCELLED"?"cancelled":""} key={event.id}><b>{eventLabels[event.type]||event.type}{event.team_id?` • Time ${event.team_id}`:""}</b><span>{formatClock(event.match_clock_ms)}{event.status==="CANCELLED"?" • desfeito":""}</span></div>):<small>Nenhum evento registrado.</small>}</section>
+    <section className="match-events panel"><h3>Eventos por horário</h3>{snapshot.events.length?snapshot.events.map(event=>{const eventPlayers=event.team_id?snapshot.teams.filter(member=>member.time===event.team_id):[];return <article className={event.status==="CANCELLED"?"cancelled":""} key={event.id}><div><b>{eventLabels[event.type]||event.type}{event.team_id?" • Time "+event.team_id:""}</b><span>{formatEventTime(event.corrected_created_at)}{event.match?.sequence_number?" • Partida "+event.match.sequence_number:""}{event.status==="CANCELLED"?" • desfeito":""}</span></div>{event.player_id&&<small>Autor: {playerName(snapshot,event.player_id)}{event.assist_player_id?" • Assistência: "+playerName(snapshot,event.assist_player_id):""}</small>}{event.type==="GOAL"&&<GoalDetails event={event} players={eventPlayers} onSaved={saveGoal}/>}</article>}) : <small>Nenhum evento registrado.</small>}</section>
     <footer><span>{navigator.onLine?"● ONLINE":"○ OFFLINE"}{nativeMatchControls.available?" • CONTROLES NATIVOS ATIVOS":""}</span>{pending>0&&<b>{pending} pendente{pending===1?"":"s"}</b>}<small>Na tela bloqueada: anterior = gol esquerdo, próximo = gol direito, avançar = lance e voltar = desfazer.</small></footer>
     <Toast message={toast}/>
   </section>
