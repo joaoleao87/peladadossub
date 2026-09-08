@@ -55,12 +55,18 @@ Não manter a gravação inteira apenas na memória.
 
 ## 4. Aplicativo nativo e tela bloqueada
 
-A camada Capacitor é obrigatória antes de considerar a gravação pronta:
+A base Capacitor e os controles de partida foram antecipados na Parte 1:
 
-- Android: câmera nativa, arquivo local e foreground service;
+- projetos Android e iOS versionados;
+- Android com serviço em primeiro plano, MediaSession e notificação persistente;
+- iOS com Now Playing e Remote Commands;
+- ponte dos comandos para a mesma fila offline da tela de controle.
+
+A gravação da Parte 2 ainda deverá completar:
+
+- Android: câmera nativa, arquivo local e serviço de gravação em primeiro plano;
 - iOS: AVFoundation e avaliação de Locked Camera Capture;
-- controle: notificação persistente Android e Live Activity/App Intents iOS;
-- ponte nativa para a fila offline da Parte 1.
+- Live Activity/App Intents iOS, quando a experiência de gravação exigir controles adicionais.
 
 Na PWA, Media Session permanece como fallback dos controles bloqueados, mas não
 garante câmera em segundo plano. No iPhone, a tela do aparelho que grava deverá
