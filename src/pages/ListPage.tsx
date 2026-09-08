@@ -9,6 +9,7 @@ import {
   allPlayers,
   myPlayer,
   myMatchVotes,
+  matchGoalSummary,
   participants,
   peladasHistory,
   replaceAbsent,
@@ -65,7 +66,8 @@ export function ListPage() {
               votes: {} as Partial<Record<VoteCategory, string>>,
             }),
       activeGameId,
-    );
+    ),
+    goalSummary = useLoad(() => activeGameId ? matchGoalSummary(activeGameId) : Promise.resolve({total:0,attributed:0}), activeGameId);
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
@@ -486,6 +488,7 @@ export function ListPage() {
           <div><b>{waiting.length}</b><span>Suplentes</span></div>
           <div><b>{keepers.length}</b><span>Goleiros</span></div>
           <div><b>{pending.length}</b><span>Aguardando</span></div>
+          <div><b>{goalSummary.data?.total??0}</b><span>Gols controle</span></div>
         </div>
       )}
       {started && canVote && (

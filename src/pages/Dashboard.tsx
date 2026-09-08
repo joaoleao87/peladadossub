@@ -6,6 +6,7 @@ import { HomeNotificationPrompt } from "../components/HomeNotificationPrompt";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
+  activeMatchControl,
   allPlayers,
   controllablePeladas,
   homeStats,
@@ -131,7 +132,7 @@ export function Dashboard() {
   const { profile, preview } = useAuth(),
     isAdmin = profile?.role === "admin" || profile?.role === "superadmin",
     state = useLoad(async () => {
-      const [game, loadedPlayer, stats, controls] = await Promise.all([nextPelada(), myPlayer(),homeStats(profile!.id),controllablePeladas()]),
+      const [game, loadedPlayer, stats, controls, activeControl] = await Promise.all([nextPelada(), myPlayer(),homeStats(profile!.id),controllablePeladas(),activeMatchControl()]),
         player=preview==='sem_vinculo'?null:loadedPlayer,
         [list, players, request, requests] = await Promise.all([
           game ? participants(game.id) : [],
@@ -148,6 +149,7 @@ export function Dashboard() {
         requests,
         stats,
         controls,
+        activeControl,
       };
     }, [profile?.id, profile?.role, preview]),
     [toast, setToast] = useState(""),
@@ -217,9 +219,9 @@ export function Dashboard() {
       ))}
     </section>
   );
-  const operatorLink = Boolean(state.data?.controls.length) && (
-    <Link className="section-link vote-shortcut" to="/controle-partida">
-      <span>Controlar partida e marcações</span>
+  const operatorLink = state.data?.activeControl && (
+    <Link className="section-link vote-shortcut" to={`/controle-partida?pelada=${state.data.activeControl.pelada_id}`}>
+      <span>PARTIDA EM ANDAMENTO • Abrir controle</span>
       <ArrowRight />
     </Link>
   );

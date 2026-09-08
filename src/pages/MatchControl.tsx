@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { allProfiles, attributeMatchGoal, authorizeMatchOperator, controllablePeladas, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import { useLoad } from "../hooks/useLoad";
@@ -50,7 +51,7 @@ function OperatorAccess({peladaId}:{peladaId:string}) {
 function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   const {realProfile}=useAuth();
   const state=useLoad(()=>matchControlSnapshot(peladaId),peladaId);
-  const[offset,setOffset]=useState(0),[tick,setTick]=useState(0),[toast,setToast]=useState(""),[busy,setBusy]=useState(false),[pending,setPending]=useState(0),[outId,setOutId]=useState(""),[inId,setInId]=useState(""),[replacementHome,setReplacementHome]=useState(""),[replacementAway,setReplacementAway]=useState("");
+  const[offset,setOffset]=useState(0),[tick,setTick]=useState(0),[toast,setToast]=useState(""),[busy,setBusy]=useState(false),[pending,setPending]=useState(0),[outId,setOutId]=useState(""),[inId,setInId]=useState(""),[replacementHome,setReplacementHome]=useState(""),[replacementAway,setReplacementAway]=useState(""),[twoGoalTeam,setTwoGoalTeam]=useState<number|null>(null);
   const alarmed=useRef(""),offsetRef=useRef(0),nativeStarted=useRef(false);
   const reload=state.reload;
   useEffect(()=>{let cancelled=false;void (async()=>{const samples=[];for(let i=0;i<3;i++)samples.push(await serverClockOffset());const best=samples.sort((a,b)=>Math.abs(a)-Math.abs(b))[0]??0;if(cancelled)return;offsetRef.current=best;setOffset(best);await registerMatchDevice(peladaId,matchDeviceId(),best)})().catch(()=>setToast("Modo offline: o dispositivo será sincronizado quando a conexão voltar."));const heartbeat=setInterval(()=>void registerMatchDevice(peladaId,matchDeviceId(),offsetRef.current).catch(()=>undefined),20000);return()=>{cancelled=true;clearInterval(heartbeat)}},[peladaId]);
@@ -64,13 +65,13 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   const correctedNow=useCallback(()=>new Date(Date.now()+offset).toISOString(),[offset]);
   const run=useCallback(async(rpc:string,args:Record<string,unknown>,success:string,optimistic?:()=>void)=>{
     setBusy(true);
-    try{const{error}=await supabase.rpc(rpc,args);if(error)throw error;setToast(success);await reload()}
-    catch(error){if(!navigator.onLine||/fetch|network/i.test(error instanceof Error?error.message:String(error))){await enqueueMatchCommand({id:String(args.p_client_event_id||crypto.randomUUID()),rpc,args,createdAt:String(args.p_occurred_at||new Date().toISOString())});optimistic?.();setPending((await pendingMatchCommands()).length);setToast("Salvo neste aparelho. Será sincronizado automaticamente.");}else setToast(error instanceof Error?error.message:"Não foi possível concluir.");}
+    try{const{error}=await supabase.rpc(rpc,args);if(error)throw error;setToast(success);await reload();return true}
+    catch(error){if(!navigator.onLine||/fetch|network/i.test(error instanceof Error?error.message:String(error))){await enqueueMatchCommand({id:String(args.p_client_event_id||crypto.randomUUID()),rpc,args,createdAt:String(args.p_occurred_at||new Date().toISOString())});optimistic?.();setPending((await pendingMatchCommands()).length);setToast("Salvo neste aparelho. Será sincronizado automaticamente.");return true}else{setToast(error instanceof Error?error.message:"Não foi possível concluir.");return false}}
     finally{setBusy(false);setTimeout(()=>setToast(""),3500)}
   },[reload]);
   const addEvent=useCallback((type:"GOAL"|"HIGHLIGHT",team:number|null)=>{
-    if(!match)return;const id=crypto.randomUUID(),occurred=correctedNow();
-    return run("registrar_evento_partida",{p_match_id:match.id,p_client_event_id:id,p_type:type,p_team_id:team,p_occurred_at:occurred,p_match_clock_ms:0,p_metadata:{}},type==="GOAL"?"Gol registrado.":"Lance importante marcado.",()=>{if(type==="GOAL"){if(team===match.team_home)match.score_home++;else match.score_away++}void reload()});
+    if(!match)return;const id=crypto.randomUUID(),occurred=correctedNow(),secondGoal=type==="GOAL"&&team!==null&&(team===match.team_home?match.score_home+1:match.score_away+1)===2;
+    return run("registrar_evento_partida",{p_match_id:match.id,p_client_event_id:id,p_type:type,p_team_id:team,p_occurred_at:occurred,p_match_clock_ms:0,p_metadata:{}},type==="GOAL"?"Gol registrado.":"Lance importante marcado.",()=>{if(type==="GOAL"){if(team===match.team_home)match.score_home++;else match.score_away++}void reload()}).then(saved=>{if(saved&&secondGoal)setTwoGoalTeam(team)});
   },[match,run,reload,correctedNow]);
   useEffect(()=>{if(!match||!nativeMatchControls.available)return;const nativeState={title:"Time "+match.team_home+" × Time "+match.team_away,score:match.score_home+" × "+match.score_away,subtitle:"Partida "+match.sequence_number,remainingMs:nativeSecond*1000,running:match.status==="RUNNING"};const action=nativeStarted.current?nativeMatchControls.update(nativeState):nativeMatchControls.start(nativeState);nativeStarted.current=true;void action.catch(error=>setToast(error instanceof Error?error.message:"Não foi possível ativar os controles nativos."))},[match,nativeSecond]);
   useEffect(()=>()=>{if(nativeMatchControls.available)void nativeMatchControls.stop().catch(()=>undefined)},[]);
@@ -92,6 +93,7 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
     <div className={`match-clock ${clock===0?"expired":""}`}>{formatClock(clock)}</div>
     <div className="match-score"><span>TIME {match.team_home}</span><strong>{match.score_home} <i>×</i> {match.score_away}</strong><span>TIME {match.team_away}</span></div>
     <div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div>
+    {twoGoalTeam!==null&&match.status==="RUNNING"&&<section className="match-finish-confirm panel"><b>TIME {twoGoalTeam} FEZ 2 GOLS</b><p>O segundo gol foi marcado. Encerrar esta partida agora?</p><div><button className="secondary" disabled={busy} onClick={()=>void run("desfazer_evento_partida",{p_match_id:match.id},"Gol desfeito.").then(done=>{if(done)setTwoGoalTeam(null)})}>↶ DESFAZER GOL</button><button disabled={busy} onClick={()=>void run("finalizar_partida_controlada",{p_match_id:match.id,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:0},"Partida finalizada. Próximos times chamados.").then(done=>{if(done)setTwoGoalTeam(null)})}>ENCERRAR PARTIDA</button><button type="button" className="link" disabled={busy} onClick={()=>setTwoGoalTeam(null)}>CONTINUAR PARTIDA</button></div></section>}
     {realProfile?.role==="superadmin"&&match.status==="CREATED"&&<details className="match-substitution panel"><summary>Trocar times desta partida</summary><p>Disponível antes de iniciar. Os times que saem voltam para o fim da fila.</p><div><label>Time mandante<select value={replacementHome||String(match.team_home)} onChange={event=>setReplacementHome(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><label>Time visitante<select value={replacementAway||String(match.team_away)} onChange={event=>setReplacementAway(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><button disabled={busy} onClick={()=>void changeTeams()}>ATUALIZAR TIMES</button></div></details>}
     {match.status==="CREATED"?<button className="match-start" disabled={busy} onClick={()=>{const id=crypto.randomUUID(),occurred=correctedNow();void run("iniciar_partida_controlada",{p_match_id:match.id,p_client_event_id:id,p_occurred_at:occurred},"Partida iniciada.",()=>{match.status="RUNNING";match.started_at=occurred;setTick(value=>value+1)})}}>▶ INICIAR PARTIDA</button>:<div className="match-actions">
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_home)}>⚽ GOL TIME {match.team_home}</button>
@@ -108,10 +110,11 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
 }
 
 export function MatchControlPage({embedded=false}:{embedded?:boolean}) {
+  const [searchParams]=useSearchParams();
   const {realProfile}=useAuth(),state=useLoad(controllablePeladas),[selected,setSelected]=useState(""),[active,setActive]=useState(""),[toast,setToast]=useState("");
   if(state.loading)return <Spinner/>;
   if(state.error)return <ErrorState message="Você não possui partidas disponíveis para controlar." retry={state.reload}/>;
-  const games=state.data??[],peladaId=selected||games[0]?.id||"";
+  const games=state.data??[],requestedPelada=searchParams.get("pelada")??"",peladaId=selected||(games.some(game=>game.id===requestedPelada)?requestedPelada:"")||games[0]?.id||"";
   if(active)return <MatchController peladaId={active} onBack={()=>setActive("")}/>;
   return <section className={embedded?"match-control-hub embedded":"match-control-hub"}><p className="eyebrow">CONTROLE DA PARTIDA</p>{!embedded&&<h1>Partida e marcação</h1>}<p>Controle autorizado, placar, cronômetro, rodízio e marcação de lances.</p>{games.length?<><label>Pelada<select value={peladaId} onChange={event=>setSelected(event.target.value)}>{games.map(game=><option value={game.id} key={game.id}>{new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • {game.local}</option>)}</select></label><button onClick={()=>void initializeMatchControl(peladaId).then(()=>setActive(peladaId)).catch(error=>{setToast(error instanceof Error?error.message:"Não foi possível iniciar o controle.");setTimeout(()=>setToast(""),3500)})}>ABRIR CONTROLE</button>{realProfile?.role==="superadmin"&&<button className="secondary" onClick={()=>{location.href="/controle-partida/"+peladaId+"/camera"}}>MODO CÂMERA</button>}{realProfile?.role==="admin"||realProfile?.role==="superadmin"?<OperatorAccess peladaId={peladaId}/>:null}</>:<Empty title="Nenhuma pelada autorizada"/>}<Toast message={toast}/></section>
 }
