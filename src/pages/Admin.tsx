@@ -3,6 +3,7 @@ import { ErrorState, Spinner, Toast } from "../components/Ui";
 import { PlayerManager } from "../components/PlayerManager";
 import { PlayerControlPanel } from "../components/PlayerControlPanel";
 import { PlayerCardsAdmin } from "../components/PlayerCardsAdmin";
+import { AdminReceiptInbox } from "../components/AdminReceiptInbox";
 import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
@@ -109,6 +110,7 @@ export function Admin() {
       </div>
       {tab === "pelada" && (
         <>
+          <AdminReceiptInbox payments={summary.comprovantes} onChanged={state.reload} />
           <form className="panel form-grid" onSubmit={recurrenceSubmit}>
             <h2>Recorrência semanal</h2>
             <label>
