@@ -48,8 +48,9 @@ function OperatorAccess({peladaId}:{peladaId:string}) {
 }
 
 function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
+  const {realProfile}=useAuth();
   const state=useLoad(()=>matchControlSnapshot(peladaId),peladaId);
-  const[offset,setOffset]=useState(0),[tick,setTick]=useState(0),[toast,setToast]=useState(""),[busy,setBusy]=useState(false),[pending,setPending]=useState(0),[outId,setOutId]=useState(""),[inId,setInId]=useState("");
+  const[offset,setOffset]=useState(0),[tick,setTick]=useState(0),[toast,setToast]=useState(""),[busy,setBusy]=useState(false),[pending,setPending]=useState(0),[outId,setOutId]=useState(""),[inId,setInId]=useState(""),[replacementHome,setReplacementHome]=useState(""),[replacementAway,setReplacementAway]=useState("");
   const alarmed=useRef(""),offsetRef=useRef(0),nativeStarted=useRef(false);
   const reload=state.reload;
   useEffect(()=>{let cancelled=false;void (async()=>{const samples=[];for(let i=0;i<3;i++)samples.push(await serverClockOffset());const best=samples.sort((a,b)=>Math.abs(a)-Math.abs(b))[0]??0;if(cancelled)return;offsetRef.current=best;setOffset(best);await registerMatchDevice(peladaId,matchDeviceId(),best)})().catch(()=>setToast("Modo offline: o dispositivo será sincronizado quando a conexão voltar."));const heartbeat=setInterval(()=>void registerMatchDevice(peladaId,matchDeviceId(),offsetRef.current).catch(()=>undefined),20000);return()=>{cancelled=true;clearInterval(heartbeat)}},[peladaId]);
@@ -80,8 +81,10 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   if(state.error)return <ErrorState message={state.error} retry={state.reload}/>;
   if(!snapshot||!match)return <Empty title="Controle não inicializado"/>;
   const activeTeams=new Set([match.team_home,match.team_away]),outPlayers=snapshot.teams.filter(member=>activeTeams.has(member.time)),incoming=snapshot.participants.filter(item=>["confirmado","presente"].includes(item.status)&&item.jogador_id!==outId);
+  const availableTeams=[...new Set(snapshot.teams.map(member=>member.time))].sort((left,right)=>left-right);
   const matchId=match.id;
   async function substitute(){if(!outId||!inId)return;await run("substituir_jogador_partida",{p_match_id:matchId,p_jogador_sai:outId,p_jogador_entra:inId,p_client_event_id:crypto.randomUUID(),p_occurred_at:correctedNow(),p_match_clock_ms:0},"Substituição registrada.");setOutId("");setInId("")}
+  async function changeTeams(){const home=Number(replacementHome||match!.team_home),away=Number(replacementAway||match!.team_away);if(home===away){setToast("Selecione dois times diferentes.");return}await run("superadmin_trocar_times_partida",{p_match_id:matchId,p_team_home:home,p_team_away:away},"Times atualizados. A fila foi ajustada.");setReplacementHome("");setReplacementAway("")}
   async function saveGoal(eventId:string,playerId:string,assistId:string|null){setBusy(true);try{await attributeMatchGoal(eventId,playerId,assistId);setToast("Gol atribuído ao jogador.");await reload()}catch(error){setToast(error instanceof Error?error.message:"Não foi possível atribuir o gol.")}finally{setBusy(false);setTimeout(()=>setToast(""),3500)}}
   return <section className="match-control">
     <header><button type="button" className="link" onClick={onBack}>← VOLTAR</button><span className={snapshot.control.device_camera_online?"camera-online":"camera-offline"}>{snapshot.control.device_camera_online?"● CÂMERA GRAVANDO":"○ CÂMERA DESCONECTADA"}</span></header>
@@ -89,6 +92,7 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
     <div className={`match-clock ${clock===0?"expired":""}`}>{formatClock(clock)}</div>
     <div className="match-score"><span>TIME {match.team_home}</span><strong>{match.score_home} <i>×</i> {match.score_away}</strong><span>TIME {match.team_away}</span></div>
     <div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div>
+    {realProfile?.role==="superadmin"&&match.status==="CREATED"&&<details className="match-substitution panel"><summary>Trocar times desta partida</summary><p>Disponível antes de iniciar. Os times que saem voltam para o fim da fila.</p><div><label>Time mandante<select value={replacementHome||String(match.team_home)} onChange={event=>setReplacementHome(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><label>Time visitante<select value={replacementAway||String(match.team_away)} onChange={event=>setReplacementAway(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><button disabled={busy} onClick={()=>void changeTeams()}>ATUALIZAR TIMES</button></div></details>}
     {match.status==="CREATED"?<button className="match-start" disabled={busy} onClick={()=>{const id=crypto.randomUUID(),occurred=correctedNow();void run("iniciar_partida_controlada",{p_match_id:match.id,p_client_event_id:id,p_occurred_at:occurred},"Partida iniciada.",()=>{match.status="RUNNING";match.started_at=occurred;setTick(value=>value+1)})}}>▶ INICIAR PARTIDA</button>:<div className="match-actions">
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_home)}>⚽ GOL TIME {match.team_home}</button>
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_away)}>⚽ GOL TIME {match.team_away}</button>
