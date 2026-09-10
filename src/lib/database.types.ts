@@ -247,6 +247,17 @@ export interface MatchAwardResult {
   apelido: string | null;
   votos: number;
 }
+export interface SuperAdminVote {
+  votante_user_id: string;
+  votante_nome: string;
+  votante_apelido: string | null;
+  categoria: VoteCategory;
+  avaliado_jogador_id: string;
+  avaliado_nome: string;
+  avaliado_apelido: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
 export interface LinkRequest {
   id: string;
   user_id: string;

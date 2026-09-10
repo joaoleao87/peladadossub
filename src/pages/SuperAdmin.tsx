@@ -8,15 +8,22 @@ import {
   createPlayerForUser,
   createUser,
   deleteUser,
+  invalidateSuperadminVote,
   manageUser,
+  participants,
+  peladasHistory,
   resetUserPassword,
   setUserSuspended,
+  superadminVotes,
+  updateSuperadminVote,
 } from "../lib/api";
 import type {
   ListPosition,
+  Participant,
   PlayerType,
   Profile,
   Role,
+  VoteCategory,
 } from "../lib/database.types";
 import "./super-admin.css";
 import { MatchCardsManager } from "../components/MatchCards";
@@ -27,6 +34,7 @@ const roles: { value: Role; label: string }[] = [
   { value: "superadmin", label: "Superadmin" },
 ];
 type UserFilter = "todos" | "sem_vinculo" | Role | PlayerType;
+type SuperAdminTab = "usuarios" | "votos" | "cards";
 const filters: { value: UserFilter; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "sem_vinculo", label: "Sem vínculo" },
@@ -49,7 +57,8 @@ export function SuperAdmin() {
     [toast, setToast] = useState(""),
     [busy, setBusy] = useState(false),
     [filter, setFilter] = useState<UserFilter>("todos"),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [tab, setTab] = useState<SuperAdminTab>("usuarios");
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
@@ -135,7 +144,12 @@ export function SuperAdmin() {
           <option value="sem_vinculo">Conta sem vínculo</option>
         </select>
       </section>
-      <form className="panel form-grid" onSubmit={submit}>
+      <nav className="superadmin-tabs" aria-label="Seções do Superadmin">
+        <button type="button" className={tab === "usuarios" ? "active" : ""} onClick={() => setTab("usuarios")}>Usuários</button>
+        <button type="button" className={tab === "votos" ? "active" : ""} onClick={() => setTab("votos")}>Votos</button>
+        <button type="button" className={tab === "cards" ? "active" : ""} onClick={() => setTab("cards")}>Cards</button>
+      </nav>
+      {tab === "usuarios" && <><form className="panel form-grid" onSubmit={submit}>
         <h2>Criar usuário</h2>
         <label>
           Nome
@@ -308,8 +322,63 @@ export function SuperAdmin() {
           <Empty title="Nenhuma conta encontrada">Tente outro nome ou filtro.</Empty>
         )}
       </section>
-      <section id="cards-da-pelada"><MatchCardsManager /></section>
+      </>}
+      {tab === "votos" && <VoteAudit />}
+      {tab === "cards" && <section id="cards-da-pelada"><MatchCardsManager /></section>}
       <Toast message={toast} />
     </section>
   );
+}
+
+const voteLabels: Record<VoteCategory, string> = {
+  destaque: "Destaque",
+  surpresa: "Surpresa",
+  negativo: "Quem quebrou mais",
+  goleiro_destaque: "Melhor goleiro",
+};
+
+function participantName(item: Participant) {
+  return item.player?.profile?.apelido || item.player?.apelido || item.player?.nome || "Jogador";
+}
+
+function VoteAudit() {
+  const [gameId, setGameId] = useState(""),
+    [choices, setChoices] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(""),
+    [toast, setToast] = useState(""),
+    state = useLoad(async () => {
+      const games = await peladasHistory(), id = gameId || games[0]?.id || "";
+      if (!id) return { games, id, votes: [], list: [] };
+      const [votes, list] = await Promise.all([superadminVotes(id), participants(id)]);
+      return { games, id, votes, list };
+    }, gameId);
+  if (state.loading) return <Spinner />;
+  if (state.error) return <ErrorState message={state.error} retry={state.reload} />;
+  const { games, id, votes, list } = state.data!;
+  async function run(key: string, action: () => Promise<unknown>, message: string) {
+    setBusy(key);
+    try { await action(); setChoices({}); setToast(message); await state.reload(); }
+    catch (error) { setToast(error instanceof Error ? error.message : "Não foi possível atualizar o voto."); }
+    finally { setBusy(""); setTimeout(() => setToast(""), 3500); }
+  }
+  return <section className="votes-panel">
+    <header><span><p className="eyebrow">AUDITORIA DE VOTOS</p><h2>Votos da pelada</h2><small>Visão restrita ao Superadmin. Alterações atualizam o resultado da votação.</small></span>
+      {games.length > 0 && <select aria-label="Selecionar pelada para visualizar votos" value={id} onChange={event => setGameId(event.target.value)}>{games.map(game => <option key={game.id} value={game.id}>{new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • {game.local}</option>)}</select>}
+    </header>
+    {!votes.length ? <Empty title="Nenhum voto nesta pelada">Quando os participantes votarem, a relação aparecerá aqui.</Empty> : <div className="vote-audit-list">{votes.map(vote => {
+      const key = `${vote.votante_user_id}:${vote.categoria}`,
+        selected = choices[key] ?? vote.avaliado_jogador_id,
+        voterPlayerId = list.find(item => item.user_id === vote.votante_user_id)?.jogador_id,
+        candidates = list.filter(item => ["confirmado", "presente"].includes(item.status) && item.jogador_id !== voterPlayerId && (vote.categoria !== "goleiro_destaque" || item.categoria === "goleiro"));
+      return <article className="vote-audit-row" key={key}>
+        <span><b>{voteLabels[vote.categoria]}</b><small>{vote.votante_apelido || vote.votante_nome} votou em</small></span>
+        <select aria-label={`Corrigir voto de ${vote.votante_apelido || vote.votante_nome}`} value={selected} onChange={event => setChoices(old => ({ ...old, [key]: event.target.value }))}>
+          {candidates.map(item => <option value={item.jogador_id} key={item.jogador_id}>{participantName(item)}</option>)}
+        </select>
+        <small className="vote-audit-date">Atualizado em {new Date(vote.atualizado_em).toLocaleString("pt-BR")}</small>
+        <nav><button disabled={busy === key || selected === vote.avaliado_jogador_id} onClick={() => void run(key, () => updateSuperadminVote(id, vote.votante_user_id, vote.categoria, selected), "Voto corrigido.")}>{busy === key ? "SALVANDO…" : "SALVAR CORREÇÃO"}</button><button className="secondary danger" disabled={busy === key} onClick={() => { if (confirm(`Invalidar o voto de ${vote.votante_apelido || vote.votante_nome}?`)) void run(key, () => invalidateSuperadminVote(id, vote.votante_user_id, vote.categoria), "Voto invalidado."); }}>INVALIDAR</button></nav>
+      </article>;
+    })}</div>}
+    <Toast message={toast} />
+  </section>;
 }
