@@ -341,6 +341,14 @@ export function Dashboard() {
           SAIR DA LISTA
         </button>
       </div>
+    ) : player.tipo === "avulso" && game.fase_lista !== "geral" ? (
+      <div className="answer-actions">
+        <b>QUER JOGAR?</b>
+        <span>Deixe sua intenção. Você entrará como suplente, sem confirmação de vaga.</span>
+        <button disabled={busy} onClick={() => answer(true)}>
+          TENHO INTERESSE
+        </button>
+      </div>
     ) : canAnswer ? (
       <div className="answer-actions">
         <button disabled={busy} onClick={() => answer(true)}>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { allProfiles, attributeMatchGoal, authorizeMatchOperator, controllablePeladas, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
+import { allProfiles, attributeMatchGoal, authorizeMatchOperator, controllablePeladas, createMatchControlLink, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import { useLoad } from "../hooks/useLoad";
 import { supabase } from "../lib/supabase";
@@ -35,7 +35,7 @@ function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players
 
 function OperatorAccess({peladaId}:{peladaId:string}) {
   const state=useLoad(async()=>{const[profiles,operators]=await Promise.all([allProfiles(),matchOperators(peladaId)]);return{profiles,operators}},peladaId);
-  const[busy,setBusy]=useState(""),[toast,setToast]=useState("");
+  const[busy,setBusy]=useState(""),[toast,setToast]=useState(""),[invite,setInvite]=useState("");
   if(state.loading)return <Spinner/>;
   if(state.error)return <ErrorState message="Não foi possível carregar os operadores." retry={state.reload}/>;
   const authorized=new Set(state.data!.operators.map(item=>item.user_id));
@@ -45,7 +45,8 @@ function OperatorAccess({peladaId}:{peladaId:string}) {
     catch(error){setToast(error instanceof Error?error.message:"Não foi possível alterar o acesso.");}
     finally{setBusy("");setTimeout(()=>setToast(""),3000)}
   }
-  return <details className="match-access panel"><summary>Autorizar operador</summary><p>O acesso vale somente para esta pelada.</p>{state.data!.profiles.filter(profile=>profile.role==="user").map(profile=><div key={profile.id}><span><b>{profile.apelido||profile.nome}</b><small>{authorized.has(profile.id)?"Autorizado":"Sem acesso"}</small></span><button type="button" className={authorized.has(profile.id)?"mini danger":"mini secondary"} disabled={busy===profile.id} onClick={()=>void toggle(profile)}>{authorized.has(profile.id)?"REMOVER":"AUTORIZAR"}</button></div>)}<Toast message={toast}/></details>
+  async function generateInvite(){setBusy("link");try{const token=await createMatchControlLink(peladaId),url=`${location.origin}/controle-partida/convite/${token}`;setInvite(url);await navigator.clipboard?.writeText(url);setToast("Link gerado e copiado. Gerar outro revoga este link.");}catch(error){setToast(error instanceof Error?error.message:"Não foi possível gerar o link.");}finally{setBusy("");setTimeout(()=>setToast(""),4000)}}
+  return <details className="match-access panel"><summary>Autorizar operador</summary><p>O acesso vale somente para esta pelada.</p><button type="button" className="mini secondary" disabled={busy==="link"} onClick={()=>void generateInvite()}>GERAR LINK DE CONTROLE</button>{invite&&<label>Link de controle<input readOnly value={invite} onFocus={event=>event.currentTarget.select()}/></label>}{state.data!.profiles.filter(profile=>profile.role==="user").map(profile=><div key={profile.id}><span><b>{profile.apelido||profile.nome}</b><small>{authorized.has(profile.id)?"Autorizado":"Sem acesso"}</small></span><button type="button" className={authorized.has(profile.id)?"mini danger":"mini secondary"} disabled={busy===profile.id} onClick={()=>void toggle(profile)}>{authorized.has(profile.id)?"REMOVER":"AUTORIZAR"}</button></div>)}<Toast message={toast}/></details>
 }
 
 function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {

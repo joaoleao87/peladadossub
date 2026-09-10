@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -8,10 +8,12 @@ const usernameEmail = (value: string) =>
 
 export function AuthPage() {
   const { session } = useAuth(),
+    [searchParams] = useSearchParams(),
     [signup, setSignup] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
-  if (session) return <Navigate to="/" replace />;
+  const next=searchParams.get("next");
+  if (session) return <Navigate to={next?.startsWith("/") ? next : "/"} replace />;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);

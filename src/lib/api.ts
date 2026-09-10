@@ -97,6 +97,8 @@ export async function finishControlledMatch(matchId:string,eventId:string,occurr
 export async function substituteControlledPlayer(matchId:string,outId:string,inId:string,eventId:string,occurredAt:string,clockMs:number){const{error}=await supabase.rpc('substituir_jogador_partida',{p_match_id:matchId,p_jogador_sai:outId,p_jogador_entra:inId,p_client_event_id:eventId,p_occurred_at:occurredAt,p_match_clock_ms:clockMs});if(error)throw error}
 export async function matchOperators(peladaId:string){const{data,error}=await supabase.from('pelada_operadores').select('*').eq('pelada_id',peladaId);if(error)throw error;return(data??[]) as MatchOperator[]}
 export async function authorizeMatchOperator(peladaId:string,userId:string,authorize:boolean){const{error}=await supabase.rpc('admin_autorizar_operador_pelada',{p_pelada_id:peladaId,p_user_id:userId,p_autorizar:authorize});if(error)throw error}
+export async function createMatchControlLink(peladaId:string){const{data,error}=await supabase.rpc('gerar_link_controle_pelada',{p_pelada_id:peladaId});if(error)throw error;return String(data)}
+export async function redeemMatchControlLink(token:string){const{data,error}=await supabase.rpc('resgatar_link_controle_pelada',{p_token:token});if(error)throw error;return String(data)}
 export async function saveOwnPlayerCardPhoto(photoUrl:string,scale:number,x:number,y:number){const{data,error}=await supabase.rpc('salvar_foto_cartinha',{p_photo_url:photoUrl,p_photo_scale:scale,p_photo_position_x:x,p_photo_position_y:y});if(error)throw error;return data as PlayerCardData}
 export async function uploadPlayerCardPhoto(playerId:string,file:File){
   if(file.size>5*1024*1024)throw new Error('A foto deve ter até 5 MB.');

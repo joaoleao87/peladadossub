@@ -112,6 +112,11 @@ export function ListPage() {
       !started &&
       (phase === "geral" ||
         (phase === "mensalistas" && profile?.mensalista_ativo)),
+    canRegisterInterest =
+      Boolean(state.data?.ownPlayer) &&
+      state.data?.ownPlayer?.tipo === "avulso" &&
+      !started &&
+      phase !== "geral",
     canVote =
       started &&
       confirmed.some(isMine),
@@ -201,8 +206,7 @@ export function ListPage() {
         {gamePicker}
         <div className="list-coming-soon">
           <span>EM BREVE</span>
-          <h2>A lista ainda não foi liberada para você</h2>
-          <p>Volte quando a próxima fase da lista estiver aberta.</p>
+          {mine?.status === "espera" ? <><h2>Você está na lista de espera</h2><p>Sua intenção foi registrada, mas ainda não é uma confirmação de vaga.</p></> : canRegisterInterest ? <><h2>A lista ainda não foi liberada para diaristas</h2><p>Você pode deixar sua intenção e entrar na lista de espera.</p><button type="button" onClick={() => void run(() => respondPelada(gameId, true), "Você entrou na lista de espera.")}>TENHO INTERESSE EM JOGAR</button></> : <><h2>A lista ainda não foi liberada para você</h2><p>Volte quando a próxima fase da lista estiver aberta.</p></>}
         </div>
       </section>
     );
@@ -238,6 +242,7 @@ export function ListPage() {
                 {isAdmin && item.player?.nome && (
                   <small className="player-record-name">Jogador: {item.player.nome}</small>
                 )}
+                {item.gols ? <small className="player-record-name">{item.gols} gol{item.gols === 1 ? "" : "s"}</small> : null}
                 {isMine(item) && <small className="player-me">VOCÊ</small>}
               </span>
               {isAdmin && (
@@ -316,9 +321,7 @@ export function ListPage() {
                           Confirmar
                         </button>
                       )}
-                      {item.status === "espera" && item.player?.tipo === "avulso" && phase !== "geral" ? (
-                        <button type="button" className="mini" disabled>Aguarda diaristas</button>
-                      ) : item.status === "espera" && (
+                      {item.status === "espera" && (
                         <button
                           type="button"
                           className="mini"
