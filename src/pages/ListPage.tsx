@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { TeamDraw } from "../components/TeamDraw";
-import { RecordingGallery } from "../components/RecordingGallery";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -495,7 +494,6 @@ export function ListPage() {
           <div><b>{goalSummary.data?.total??0}</b><span>Gols controle</span></div>
         </div>
       )}
-      <RecordingGallery peladaId={game.id}/>
       {started && canVote && (
         <p className="voting-notice voting-ready">
           <b>Como votar:</b> escolha destaque, surpresa, quem quebrou mais e o
