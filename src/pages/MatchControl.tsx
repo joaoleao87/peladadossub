@@ -33,9 +33,16 @@ function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players
   </details>
 }
 
+function ControlLink({peladaId,shortcut=false}:{peladaId:string;shortcut?:boolean}) {
+  const [busy,setBusy]=useState(false),[toast,setToast]=useState(""),[invite,setInvite]=useState("");
+  async function copyInvite(url:string){try{await navigator.clipboard?.writeText(url);setToast("Link gerado e copiado. Gerar outro revoga este link.");}catch{setToast("Link gerado. Use o botão COPIAR LINK para compartilhar.")}}
+  async function generateInvite(){setBusy(true);try{const token=await createMatchControlLink(peladaId),url=`${location.origin}/controle-partida/convite/${token}`;setInvite(url);await copyInvite(url);}catch(error){setToast(error instanceof Error?error.message:"Não foi possível gerar o link.");}finally{setBusy(false);setTimeout(()=>setToast(""),4000)}}
+  return <section className={shortcut?"control-link-shortcut":"match-access-link"}><button type="button" className="mini secondary" disabled={busy} onClick={()=>void generateInvite()}>{busy?"GERANDO…":"GERAR LINK DE CONTROLE"}</button>{invite&&<label>Link de controle<input readOnly value={invite} onFocus={event=>event.currentTarget.select()}/><button type="button" className="mini" onClick={()=>void copyInvite(invite)}>COPIAR LINK</button></label>}<Toast message={toast}/></section>;
+}
+
 function OperatorAccess({peladaId}:{peladaId:string}) {
   const state=useLoad(async()=>{const[profiles,operators]=await Promise.all([allProfiles(),matchOperators(peladaId)]);return{profiles,operators}},peladaId);
-  const[busy,setBusy]=useState(""),[toast,setToast]=useState(""),[invite,setInvite]=useState("");
+  const[busy,setBusy]=useState(""),[toast,setToast]=useState("");
   if(state.loading)return <Spinner/>;
   if(state.error)return <ErrorState message="Não foi possível carregar os operadores." retry={state.reload}/>;
   const authorized=new Set(state.data!.operators.map(item=>item.user_id));
@@ -45,9 +52,7 @@ function OperatorAccess({peladaId}:{peladaId:string}) {
     catch(error){setToast(error instanceof Error?error.message:"Não foi possível alterar o acesso.");}
     finally{setBusy("");setTimeout(()=>setToast(""),3000)}
   }
-  async function copyInvite(url:string){try{await navigator.clipboard?.writeText(url);setToast("Link gerado e copiado. Gerar outro revoga este link.");}catch{setToast("Link gerado. Use o botão COPIAR LINK para compartilhar.")}}
-  async function generateInvite(){setBusy("link");try{const token=await createMatchControlLink(peladaId),url=`${location.origin}/controle-partida/convite/${token}`;setInvite(url);await copyInvite(url);}catch(error){setToast(error instanceof Error?error.message:"Não foi possível gerar o link.");}finally{setBusy("");setTimeout(()=>setToast(""),4000)}}
-  return <details className="match-access panel" open><summary>Link e operadores</summary><p>O acesso vale somente para esta pelada.</p><div className="match-access-link"><button type="button" className="mini secondary" disabled={busy==="link"} onClick={()=>void generateInvite()}>{busy==="link"?"GERANDO…":"GERAR LINK DE CONTROLE"}</button>{invite&&<label>Link de controle<input readOnly value={invite} onFocus={event=>event.currentTarget.select()}/><button type="button" className="mini" onClick={()=>void copyInvite(invite)}>COPIAR LINK</button></label>}</div>{state.data!.profiles.filter(profile=>profile.role==="user").map(profile=><div key={profile.id}><span><b>{profile.apelido||profile.nome}</b><small>{authorized.has(profile.id)?"Autorizado":"Sem acesso"}</small></span><button type="button" className={authorized.has(profile.id)?"mini danger":"mini secondary"} disabled={busy===profile.id} onClick={()=>void toggle(profile)}>{authorized.has(profile.id)?"REMOVER":"AUTORIZAR"}</button></div>)}<Toast message={toast}/></details>
+  return <details className="match-access panel" open><summary>Link e operadores</summary><p>O acesso vale somente para esta pelada.</p><ControlLink peladaId={peladaId}/>{state.data!.profiles.filter(profile=>profile.role==="user").map(profile=><div key={profile.id}><span><b>{profile.apelido||profile.nome}</b><small>{authorized.has(profile.id)?"Autorizado":"Sem acesso"}</small></span><button type="button" className={authorized.has(profile.id)?"mini danger":"mini secondary"} disabled={busy===profile.id} onClick={()=>void toggle(profile)}>{authorized.has(profile.id)?"REMOVER":"AUTORIZAR"}</button></div>)}<Toast message={toast}/></details>
 }
 
 function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
@@ -92,6 +97,7 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   return <section className="match-control">
     <header><button type="button" className="link" onClick={onBack}>← VOLTAR</button><span className={snapshot.control.device_camera_online?"camera-online":"camera-offline"}>{snapshot.control.device_camera_online?"● CÂMERA GRAVANDO":"○ CÂMERA DESCONECTADA"}</span></header>
     <p className="eyebrow">FUTSAL • PARTIDA {match.sequence_number}</p>
+    {(realProfile?.role==="admin"||realProfile?.role==="superadmin")&&<ControlLink peladaId={peladaId} shortcut/>}
     <div className={`match-clock ${clock===0?"expired":""}`}>{formatClock(clock)}</div>
     <div className="match-score"><span>TIME {match.team_home}</span><strong>{match.score_home} <i>×</i> {match.score_away}</strong><span>TIME {match.team_away}</span></div>
     <div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div>
