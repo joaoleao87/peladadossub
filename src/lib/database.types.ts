@@ -287,6 +287,6 @@ export interface Expense {
 }
 export type RecordingStatus = "READY" | "RECORDING" | "FINISHED" | "PROCESSING" | "COMPLETED" | "ERROR";
 export type RecordingUploadStatus = "LOCAL" | "PENDING" | "UPLOADING" | "UPLOADED" | "ERROR";
-export interface RecordingSession { id:string; pelada_id:string; admin_id:string; device_id:string; started_at:string; ended_at:string|null; duration_ms:number; status:RecordingStatus; upload_status:RecordingUploadStatus; server_time_offset_ms:number; created_at:string; }
+export interface RecordingSession { id:string; pelada_id:string; admin_id:string; device_id:string; started_at:string; ended_at:string|null; duration_ms:number; status:RecordingStatus; upload_status:RecordingUploadStatus; server_time_offset_ms:number; full_storage_path:string|null; full_r2_key:string|null; full_mime_type:string|null; full_byte_size:number|null; created_at:string; }
 export interface RecordingFragment { id:string; session_id:string; sequence_number:number; started_at:string; duration_ms:number; storage_path:string; mime_type:string; byte_size:number; sha256:string|null; upload_status:"PENDING"|"UPLOADING"|"UPLOADED"|"ERROR"; }
 export interface RecordingCut { id:string; session_id:string; event_id:string; clip_start_ms:number; clip_end_ms:number; status:"PENDING"|"PROCESSING"|"COMPLETED"|"ERROR"|"CANCELLED"; output_path:string|null; error_message:string|null; }
