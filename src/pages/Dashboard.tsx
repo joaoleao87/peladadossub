@@ -221,6 +221,7 @@ export function Dashboard() {
     </section>
   );
   const operatorLink = state.data?.activeControl && <><DashboardMatchControls peladaId={state.data.activeControl.pelada_id}/><Link className="section-link vote-shortcut" to={`/controle-partida?pelada=${state.data.activeControl.pelada_id}`}><span>Ver lances no controle completo</span><ArrowRight /></Link></>;
+  const coinTossLink = <Link className="section-link" to="/cara-ou-coroa"><span>🪙 Cara ou coroa</span><ArrowRight /></Link>;
   if (!game)
     return (
       <section>
@@ -233,6 +234,7 @@ export function Dashboard() {
         {linkPanel}
         {adminRequests}
         {operatorLink}
+        {coinTossLink}
         <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
         <Empty title="Nenhuma pelada marcada">
           O admin precisa gerar a próxima ocorrência semanal.
@@ -379,6 +381,7 @@ export function Dashboard() {
       {linkPanel}
       {adminRequests}
       {operatorLink}
+      {coinTossLink}
       <Link className="section-link" to="/ranking#cards-da-pelada"><span>Ver destaques da pelada</span><ArrowRight /></Link>
       <article className="game-card">
         <div className="game-card-top">
