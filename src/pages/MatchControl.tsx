@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { allProfiles, attributeMatchGoal, authorizeMatchOperator, controllablePeladas, createMatchControlLink, initializeMatchControl, matchControlSnapshot, matchOperators, registerMatchDevice, serverClockOffset } from "../lib/api";
+import { attributeMatchGoal, controllablePeladas, initializeMatchControl, matchControlSnapshot, registerMatchDevice, serverClockOffset } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 import { useLoad } from "../hooks/useLoad";
 import { supabase } from "../lib/supabase";
 import { nativeMatchControls } from "../lib/nativeMatchControls";
 import { enqueueMatchCommand, flushMatchCommands, matchDeviceId, pendingMatchCommands } from "../lib/matchOffline";
-import type { ControlledMatchEvent, MatchControlSnapshot, Profile, TeamMember } from "../lib/database.types";
+import type { ControlledMatchEvent, MatchControlSnapshot, TeamMember } from "../lib/database.types";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { RecordingGallery } from "../components/RecordingGallery";
 import "./match-control.css";
@@ -34,32 +34,10 @@ function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players
   </details>
 }
 
-function ControlLink({peladaId,shortcut=false}:{peladaId:string;shortcut?:boolean}) {
-  const [busy,setBusy]=useState(false),[toast,setToast]=useState(""),[invite,setInvite]=useState("");
-  async function copyInvite(url:string){try{await navigator.clipboard?.writeText(url);setToast("Link gerado e copiado. Gerar outro revoga este link.");}catch{setToast("Link gerado. Use o botão COPIAR LINK para compartilhar.")}}
-  async function generateInvite(){setBusy(true);try{const token=await createMatchControlLink(peladaId),url=`${location.origin}/controle-partida/convite/${token}`;setInvite(url);await copyInvite(url);}catch(error){setToast(error instanceof Error?error.message:"Não foi possível gerar o link.");}finally{setBusy(false);setTimeout(()=>setToast(""),4000)}}
-  return <section className={shortcut?"control-link-shortcut":"match-access-link"}><button type="button" className="mini secondary" disabled={busy} onClick={()=>void generateInvite()}>{busy?"GERANDO…":"GERAR LINK DE CONTROLE"}</button>{invite&&<label>Link de controle<input readOnly value={invite} onFocus={event=>event.currentTarget.select()}/><button type="button" className="mini" onClick={()=>void copyInvite(invite)}>COPIAR LINK</button></label>}<Toast message={toast}/></section>;
-}
-
 function MatchEvents({snapshot,onSaved}:{snapshot:MatchControlSnapshot;onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>}) {
   const groups=new Map<number,ControlledMatchEvent[]>();
   for(const event of snapshot.events){const number=event.match?.sequence_number??0;groups.set(number,[...(groups.get(number)??[]),event])}
   return <section className="match-events panel"><h3>Eventos por partida</h3>{groups.size?[...groups.entries()].map(([number,events])=><div className="match-event-group" key={number}><h4>Partida {number||"sem partida"}</h4>{events.map(event=>{const eventPlayers=event.team_id?snapshot.teams.filter(member=>member.time===event.team_id):[];return <article className={event.status==="CANCELLED"?"cancelled":""} key={event.id}><div><b>{eventLabels[event.type]||event.type}{event.team_id?" • Time "+event.team_id:""}</b><span>{formatEventTime(event.corrected_created_at)}{event.status==="CANCELLED"?" • desfeito":""}</span></div>{event.player_id&&<small>Autor: {playerName(snapshot,event.player_id)}{event.assist_player_id?" • Assistência: "+playerName(snapshot,event.assist_player_id):""}</small>}{event.type==="GOAL"&&<GoalDetails event={event} players={eventPlayers} onSaved={onSaved}/>}</article>})}</div>):<small>Nenhum evento registrado.</small>}</section>;
-}
-
-function OperatorAccess({peladaId}:{peladaId:string}) {
-  const state=useLoad(async()=>{const[profiles,operators]=await Promise.all([allProfiles(),matchOperators(peladaId)]);return{profiles,operators}},peladaId);
-  const[busy,setBusy]=useState(""),[toast,setToast]=useState("");
-  if(state.loading)return <Spinner/>;
-  if(state.error)return <ErrorState message="Não foi possível carregar os operadores." retry={state.reload}/>;
-  const authorized=new Set(state.data!.operators.map(item=>item.user_id));
-  async function toggle(profile:Profile){
-    setBusy(profile.id);
-    try{await authorizeMatchOperator(peladaId,profile.id,!authorized.has(profile.id));await state.reload();setToast(authorized.has(profile.id)?"Acesso removido.":"Operador autorizado para esta pelada.");}
-    catch(error){setToast(error instanceof Error?error.message:"Não foi possível alterar o acesso.");}
-    finally{setBusy("");setTimeout(()=>setToast(""),3000)}
-  }
-  return <details className="match-access panel" open><summary>Link e operadores</summary><p>O acesso vale somente para esta pelada.</p><ControlLink peladaId={peladaId}/>{state.data!.profiles.filter(profile=>profile.role==="user").map(profile=><div key={profile.id}><span><b>{profile.apelido||profile.nome}</b><small>{authorized.has(profile.id)?"Autorizado":"Sem acesso"}</small></span><button type="button" className={authorized.has(profile.id)?"mini danger":"mini secondary"} disabled={busy===profile.id} onClick={()=>void toggle(profile)}>{authorized.has(profile.id)?"REMOVER":"AUTORIZAR"}</button></div>)}<Toast message={toast}/></details>
 }
 
 function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
@@ -104,7 +82,6 @@ function MatchController({peladaId,onBack}:{peladaId:string;onBack:()=>void}) {
   return <section className="match-control">
     <header><button type="button" className="link" onClick={onBack}>← VOLTAR</button><span className={snapshot.control.device_camera_online?"camera-online":"camera-offline"}>{snapshot.control.device_camera_online?"● CÂMERA GRAVANDO":"○ CÂMERA DESCONECTADA"}</span></header>
     <p className="eyebrow">FUTSAL • PARTIDA {match.sequence_number}</p>
-    {(realProfile?.role==="admin"||realProfile?.role==="superadmin")&&<ControlLink peladaId={peladaId} shortcut/>}
     <div className={`match-clock ${clock===0?"expired":""}`}>{formatClock(clock)}</div>
     <div className="match-score"><span>TIME {match.team_home}</span><strong>{match.score_home} <i>×</i> {match.score_away}</strong><span>TIME {match.team_away}</span></div>
     <div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div>
@@ -131,5 +108,5 @@ export function MatchControlPage({embedded=false}:{embedded?:boolean}) {
   if(state.error)return <ErrorState message="Você não possui partidas disponíveis para controlar." retry={state.reload}/>;
   const games=state.data??[],requestedPelada=searchParams.get("pelada")??"",peladaId=selected||(games.some(game=>game.id===requestedPelada)?requestedPelada:"")||games[0]?.id||"";
   if(active)return <MatchController peladaId={active} onBack={()=>setActive("")}/>;
-  return <section className={embedded?"match-control-hub embedded":"match-control-hub"}><p className="eyebrow">CONTROLE DA PARTIDA</p>{!embedded&&<h1>Partida e marcação</h1>}<p>Controle autorizado, placar, cronômetro, rodízio e marcação de lances.</p>{games.length?<><label>Pelada<select value={peladaId} onChange={event=>setSelected(event.target.value)}>{games.map(game=><option value={game.id} key={game.id}>{new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • {game.local}</option>)}</select></label><button onClick={()=>void initializeMatchControl(peladaId).then(()=>setActive(peladaId)).catch(error=>{setToast(error instanceof Error?error.message:"Não foi possível iniciar o controle.");setTimeout(()=>setToast(""),3500)})}>ABRIR CONTROLE</button>{realProfile?.role==="superadmin"&&<button className="secondary" onClick={()=>{location.href="/controle-partida/"+peladaId+"/camera"}}>MODO CÂMERA</button>}{realProfile?.role==="admin"||realProfile?.role==="superadmin"?<OperatorAccess peladaId={peladaId}/>:null}<RecordingGallery peladaId={peladaId}/></>:<Empty title="Nenhuma pelada autorizada"/>}<Toast message={toast}/></section>
+  return <section className={embedded?"match-control-hub embedded":"match-control-hub"}><p className="eyebrow">CONTROLE DA PARTIDA</p>{!embedded&&<h1>Partida e marcação</h1>}<p>Placar, cronômetro, rodízio e marcação de lances.</p>{games.length?<><label>Pelada<select value={peladaId} onChange={event=>setSelected(event.target.value)}>{games.map(game=><option value={game.id} key={game.id}>{new Date(`${game.data}T12:00`).toLocaleDateString("pt-BR")} • {game.local}</option>)}</select></label><button onClick={()=>void initializeMatchControl(peladaId).then(()=>setActive(peladaId)).catch(error=>{setToast(error instanceof Error?error.message:"Não foi possível iniciar o controle.");setTimeout(()=>setToast(""),3500)})}>ABRIR CONTROLE</button>{realProfile?.role==="superadmin"&&<button className="secondary" onClick={()=>{location.href="/controle-partida/"+peladaId+"/camera"}}>MODO CÂMERA</button>}<RecordingGallery peladaId={peladaId}/></>:<Empty title="Nenhuma pelada disponível"/>}<Toast message={toast}/></section>
 }
