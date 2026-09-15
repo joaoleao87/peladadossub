@@ -137,7 +137,9 @@ export interface MatchControlSnapshot {
   events: ControlledMatchEvent[];
   teams: TeamMember[];
   participants: Participant[];
+  pendingTieBreaks: MatchTieBreak[];
 }
+export interface MatchTieBreak { match_id:string; team_home:number; team_away:number }
 export interface Player {
   id: string;
   nome: string;
