@@ -82,11 +82,11 @@ export interface MatchCard {
   liberado: boolean;
 }
 
-export type ControlledMatchStatus = "CREATED" | "RUNNING" | "FINISHED";
+export type ControlledMatchStatus = "CREATED" | "RUNNING" | "PAUSED" | "FINISHED";
 export type MatchEventType = "MATCH_STARTED" | "GOAL" | "HIGHLIGHT" | "SUBSTITUTION" | "MATCH_FINISHED";
 export interface MatchControl {
   pelada_id: string;
-  status: "CREATED" | "READY" | "RUNNING" | "FINISHED";
+  status: "CREATED" | "READY" | "RUNNING" | "PAUSED" | "FINISHED";
   active_match_id: string | null;
   team_queue: number[];
   device_camera_online: boolean;
