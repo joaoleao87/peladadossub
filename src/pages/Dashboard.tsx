@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ArrowRight, MapPin, Users } from "../components/Icons";
 import { HomeNotificationPrompt } from "../components/HomeNotificationPrompt";
+import { DashboardMatchControls } from "./MatchControl";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { useLoad } from "../hooks/useLoad";
 import {
@@ -219,12 +220,7 @@ export function Dashboard() {
       ))}
     </section>
   );
-  const operatorLink = state.data?.activeControl && (
-    <Link className="section-link vote-shortcut" to={`/controle-partida?pelada=${state.data.activeControl.pelada_id}`}>
-      <span>PARTIDA EM ANDAMENTO • Abrir controle</span>
-      <ArrowRight />
-    </Link>
-  );
+  const operatorLink = state.data?.activeControl && <><DashboardMatchControls peladaId={state.data.activeControl.pelada_id}/><Link className="section-link vote-shortcut" to={`/controle-partida?pelada=${state.data.activeControl.pelada_id}`}><span>Ver lances no controle completo</span><ArrowRight /></Link></>;
   if (!game)
     return (
       <section>
