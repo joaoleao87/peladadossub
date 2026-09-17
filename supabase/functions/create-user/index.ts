@@ -8,6 +8,16 @@ Deno.serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{head
   let callerId:string|null=null
   if(!bootstrap){const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get('Authorization')??''}}});const {data:{user}}=await caller.auth.getUser();if(!user)throw new Error('Não autenticado');callerId=user.id;const {data:profile}=await caller.from('profiles').select('role').eq('id',user.id).single();if(profile?.role!=='superadmin')throw new Error('Acesso negado')}
   const body=await req.json(),action=String(body.action??'create')
+  if(action==='impersonate'){
+    const userId=String(body.user_id??'')
+    if(!userId)throw new Error('Usuário inválido')
+    const {data:target,error:targetError}=await admin.auth.admin.getUserById(userId)
+    if(targetError)throw targetError
+    if(!target.user?.email)throw new Error('Esta conta não possui e-mail de acesso')
+    const {data:link,error:linkError}=await admin.auth.admin.generateLink({type:'magiclink',email:target.user.email})
+    if(linkError)throw linkError
+    return json({token_hash:link.properties.hashed_token})
+  }
   if(action==='delete'){
     const userId=String(body.user_id??'')
     if(!userId)throw new Error('Usuário inválido')

@@ -11,6 +11,7 @@ import {
   reopenMonthlyCharges,
   refreshLatePayments,
   saveFinanceConfig,
+  setPaymentConfirmationSuspension,
   settleMonthlyCharges,
   updatePayment,
   notifyAllUnpaid,
@@ -169,6 +170,22 @@ export function FinanceCenter() {
                 )}
               {["pendente", "atrasado"].includes(p.status) && (
                 <button className="mini secondary" onClick={() => run(() => notifyPayment(p.id), "Notificação de cobrança registrada.")}>NOTIFICAR</button>
+              )}
+              {["pendente", "atrasado"].includes(p.status) && (
+                p.player?.id && <button
+                  className={`mini ${p.player.confirmacao_bloqueada ? "secondary" : "danger"}`}
+                  onClick={() => {
+                    if (p.player?.confirmacao_bloqueada) {
+                      void run(() => setPaymentConfirmationSuspension(p.id, false), "Confirmação reativada.");
+                      return;
+                    }
+                    const reason = prompt("Motivo da suspensão (será exibido ao jogador):");
+                    if (reason === null) return;
+                    void run(() => setPaymentConfirmationSuspension(p.id, true, reason), "Confirmação suspensa até o pagamento.");
+                  }}
+                >
+                  {p.player.confirmacao_bloqueada ? "REATIVAR CONFIRMAÇÃO" : "SUSPENDER CONFIRMAÇÃO"}
+                </button>
               )}
               {["pendente", "atrasado"].includes(p.status) && (
                 <button

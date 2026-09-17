@@ -8,6 +8,7 @@ import {
   createPlayerForUser,
   createUser,
   deleteUser,
+  impersonateUser,
   invalidateSuperadminVote,
   manageUser,
   participants,
@@ -120,6 +121,14 @@ export function SuperAdmin() {
     const password = prompt("Nova senha (mínimo 8 caracteres):");
     if (!password) return;
     await run(() => resetUserPassword(userId, password), "Senha alterada.");
+  }
+  async function loginAs(profile: Profile) {
+    const name = profile.apelido || profile.nome;
+    if (!confirm(`Entrar como ${name}? Você sairá da sua conta de superadmin.`)) return;
+    setBusy(true);
+    try { setPreview(null); await impersonateUser(profile.id); }
+    catch (err) { feedback(err instanceof Error ? err.message : "Não foi possível entrar neste perfil."); }
+    finally { setBusy(false); }
   }
   const linkedPlayer = (profile: Profile) =>
     players.find((player) => player.user_id === profile.id);
@@ -314,6 +323,14 @@ export function SuperAdmin() {
                     onClick={() => changePassword(profile.id)}
                   >
                     Alterar senha
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary user-password"
+                    disabled={busy || profile.id === realProfile?.id}
+                    onClick={() => void loginAs(profile)}
+                  >
+                    ENTRAR COMO ESTE PERFIL
                   </button>
                 </div>
               </details>

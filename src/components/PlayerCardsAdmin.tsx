@@ -1,17 +1,18 @@
 import { useState, type FormEvent } from "react";
-import { allPlayerCards, savePlayerCard } from "../lib/api";
+import { allPlayerCards, savePlayerCard, savePlayerCardPhoto, uploadPlayerCardPhoto } from "../lib/api";
 import { useLoad } from "../hooks/useLoad";
 import type { PlayerCardData, PlayerCardPosition, PlayerCardType, PlayerWithCard } from "../lib/database.types";
 import { calculatePlayerCardOverall, cardStats, CARD_POSITIONS, PLAYER_CARD_STATUS_LABEL, playerCardStatus } from "../lib/playerCard";
 import { Badge, Empty, ErrorState, Spinner, Toast } from "./Ui";
 import { PlayerCard } from "./PlayerCard";
+import { CardPhotoEditor } from "./CardPhotoEditor";
 import "./player-cards-admin.css";
 
 type Filter = "all" | PlayerCardType | ReturnType<typeof playerCardStatus>;
 const emptyCard = (player: PlayerWithCard): PlayerCardData => ({ player_id: player.id, display_name: player.apelido || player.nome, position: null, overall: null, pace: null, shooting: null, passing: null, dribbling: null, defending: null, physical: null, card_type: "normal", photo_url: null, photo_scale: 1, photo_position_x: 0, photo_position_y: 0, resolved_photo_url: player.profile?.foto_url || null });
 
 export function PlayerCardsAdmin() {
-  const [query, setQuery] = useState(""), [filter, setFilter] = useState<Filter>("all"), [selectedId, setSelectedId] = useState(""), [draft, setDraft] = useState<PlayerCardData | null>(null), [busy, setBusy] = useState(false), [toast, setToast] = useState("");
+  const [query, setQuery] = useState(""), [filter, setFilter] = useState<Filter>("all"), [selectedId, setSelectedId] = useState(""), [draft, setDraft] = useState<PlayerCardData | null>(null), [photoPlayer, setPhotoPlayer] = useState<PlayerWithCard | null>(null), [busy, setBusy] = useState(false), [toast, setToast] = useState("");
   const state = useLoad(allPlayerCards);
   const players = state.data ?? [];
   const filtered = players.filter(player => {
@@ -53,9 +54,16 @@ export function PlayerCardsAdmin() {
       </form>
     </div><Toast message={toast} />
   </section>;
+  const photoCard = photoPlayer ? { ...(photoPlayer.card || emptyCard(photoPlayer)), resolved_photo_url: photoPlayer.card?.resolved_photo_url || photoPlayer.profile?.foto_url || null } : null;
   return <section className="player-cards-admin"><p className="eyebrow">CARTINHAS DOS JOGADORES</p><h2>Cartinhas dos jogadores</h2><p>Configure posição, tipo de carta e atributos. O overall é calculado automaticamente.</p>
     <div className="card-admin-filters"><input type="search" placeholder="Buscar jogador…" value={query} onChange={event => setQuery(event.target.value)} /><select value={filter} onChange={event => setFilter(event.target.value as Filter)}><option value="all">Todas</option><option value="normal">Normais</option><option value="legendary">Lendárias</option><option value="not_configured">Não configuradas</option><option value="incomplete">Incompletas</option><option value="ready">Prontas</option></select></div>
-    <div className="card-admin-list">{filtered.length ? filtered.map(player => { const status = playerCardStatus(player.card); return <article key={player.id}><span className="card-admin-avatar">{player.card?.resolved_photo_url || player.profile?.foto_url ? <img src={player.card?.resolved_photo_url || player.profile?.foto_url || ""} alt="" /> : (player.apelido || player.nome)[0]}</span><span><b>{player.apelido || player.nome}</b><small>{player.card?.overall ? `${player.card.overall} • ${player.card.position || "SEM POSIÇÃO"}` : "Sem overall"} • {player.card?.card_type === "legendary" ? "LENDÁRIA" : "NORMAL"}</small></span><Badge tone={status === "ready" ? "green" : status === "incomplete" ? "yellow" : "gray"}>{PLAYER_CARD_STATUS_LABEL[status]}</Badge><button type="button" className="mini secondary" onClick={() => edit(player)}>EDITAR</button></article>; }) : <Empty title="Nenhum jogador encontrado" />}</div>
+    <div className="card-admin-list">{filtered.length ? filtered.map(player => { const status = playerCardStatus(player.card); return <article key={player.id}><span className="card-admin-avatar">{player.card?.resolved_photo_url || player.profile?.foto_url ? <img src={player.card?.resolved_photo_url || player.profile?.foto_url || ""} alt="" /> : (player.apelido || player.nome)[0]}</span><span><b>{player.apelido || player.nome}</b><small>{player.card?.overall ? `${player.card.overall} • ${player.card.position || "SEM POSIÇÃO"}` : "Sem overall"} • {player.card?.card_type === "legendary" ? "LENDÁRIA" : "NORMAL"}</small></span><Badge tone={status === "ready" ? "green" : status === "incomplete" ? "yellow" : "gray"}>{PLAYER_CARD_STATUS_LABEL[status]}</Badge><button type="button" className="mini secondary" onClick={() => setPhotoPlayer(player)}>FOTO</button><button type="button" className="mini secondary" onClick={() => edit(player)}>EDITAR</button></article>; }) : <Empty title="Nenhum jogador encontrado" />}</div>
     <Toast message={toast} />
+    {photoPlayer && photoCard && <CardPhotoEditor card={photoCard} onCancel={() => setPhotoPlayer(null)} onConfirm={async (file, framing) => {
+      const path = file ? await uploadPlayerCardPhoto(photoPlayer.id, file) : photoCard.photo_url;
+      if (!path) throw new Error("Selecione uma foto para a cartinha.");
+      await savePlayerCardPhoto(photoPlayer.id, path, framing.scale, framing.x, framing.y);
+      setPhotoPlayer(null); setToast("Foto da cartinha atualizada."); setTimeout(() => setToast(""), 3500); await state.reload();
+    }} />}
   </section>;
 }

@@ -150,6 +150,8 @@ export interface Player {
   posicao: ListPosition;
   ativo: boolean;
   confirmacao_bloqueada?: boolean;
+  confirmacao_bloqueada_motivo?: string | null;
+  suspensao_confirmacao_pagamento_id?: string | null;
   isento_mensalidade?: boolean;
   nota_equilibrio?: number;
   profile?: Profile | null;
