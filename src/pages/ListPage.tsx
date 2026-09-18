@@ -95,6 +95,7 @@ export function ListPage() {
     ),
     keepers = confirmed.filter((item) => item.categoria === "goleiro"),
     pending = current.filter((item) => item.status === "aguardando_resposta"),
+    absentPlayers = current.filter((item) => item.status === "faltou"),
     isMine = (item: Participant) =>
       item.jogador_id === state.data?.ownPlayer?.id ||
       item.user_id === profile?.id ||
@@ -244,6 +245,11 @@ export function ListPage() {
                 )}
                 {item.gols ? <small className="player-record-name">{item.gols} gol{item.gols === 1 ? "" : "s"}</small> : null}
                 {isMine(item) && <small className="player-me">VOCÊ</small>}
+                {game.pelada_iniciada && (
+                  <small className={`attendance-status ${item.comparecimento ? "present" : item.status === "faltou" ? "absent" : "pending"}`}>
+                    {item.comparecimento ? "PRESENTE" : item.status === "faltou" ? "FALTOU" : "PRESENÇA PENDENTE"}
+                  </small>
+                )}
               </span>
               {isAdmin && (
                 <nav
@@ -503,6 +509,7 @@ export function ListPage() {
       {group("Confirmados", line)}
       {group("Suplentes", waiting)}
       {group("Goleiros", keepers)}
+      {game.pelada_iniciada && absentPlayers.length > 0 && group("Faltaram", absentPlayers)}
       {isAdmin && pending.length > 0 && group("Aguardando resposta", pending)}
       {started && voting.error && (
         <p className="voting-notice">{voting.error}</p>

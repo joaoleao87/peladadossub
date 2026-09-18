@@ -3,10 +3,9 @@ import { useLoad } from "../hooks/useLoad";
 import {
   activeSeries,
   expenses,
-  generateCasualCharges,
+  deletePayment,
   generateMonthlyCharges,
   payments,
-  peladasHistory,
   receiptUrl,
   reopenMonthlyCharges,
   refreshLatePayments,
@@ -34,7 +33,6 @@ const money = new Intl.NumberFormat("pt-BR", {
   });
 export function FinanceCenter() {
   const [tab, setTab] = useState<Tab>("resumo"),
-    [gameId, setGameId] = useState(""),
     [paymentQuery, setPaymentQuery] = useState(""),
     [paymentFilter, setPaymentFilter] = useState<PaymentStatusFilter>("todos"),
     [toast, setToast] = useState("");
@@ -45,26 +43,22 @@ export function FinanceCenter() {
   });
   const state = useLoad(async () => {
     await refreshLatePayments();
-    const [series, items, games, costs] = await Promise.all([
+    const [series, items, costs] = await Promise.all([
       activeSeries(),
       payments(),
-      peladasHistory(),
       expenses(),
     ]);
-    return { series, items, games, costs };
+    return { series, items, costs };
   });
   if (state.loading) return <Spinner />;
   if (state.error)
     return <ErrorState message={state.error} retry={state.reload} />;
-  const { series, items, games, costs } = state.data!,
+  const { series, items, costs } = state.data!,
     summary = calculateFinanceSummary(items, costs),
-    selectedGame = gameId || games[0]?.id || "",
     monthly = items.filter(
       (x) => x.tipo === "mensalidade" && x.competencia?.slice(0, 7) === month,
     ),
-    casual = items.filter(
-      (x) => x.tipo === "avulso" && x.pelada_id === selectedGame,
-    ),
+    casual = items.filter((x) => x.tipo === "avulso"),
     receivables = items.filter((item) => ["pendente", "atrasado"].includes(item.status)).sort((a,b)=>(a.data_vencimento??"9999").localeCompare(b.data_vencimento??"9999")).slice(0,5),
     payables = costs.flatMap((cost)=>cost.parcelas.filter((installment)=>!installment.paga).map((installment)=>({...installment,descricao:cost.descricao}))).sort((a,b)=>a.data_vencimento.localeCompare(b.data_vencimento)).slice(0,5),
     date = (value:string|null|undefined) => value ? new Date(`${value}T12:00`).toLocaleDateString("pt-BR") : "Sem vencimento";
@@ -214,6 +208,17 @@ export function FinanceCenter() {
                   DESFAZER
                 </button>
               )}
+              {["pendente", "atrasado"].includes(p.status) && (
+                <button
+                  className="mini danger"
+                  onClick={() =>
+                    confirm("Remover esta cobrança sem quitar?") &&
+                    run(() => deletePayment(p.id), "Cobrança removida.")
+                  }
+                >
+                  REMOVER
+                </button>
+              )}
             </div>
           </div>
         ))
@@ -340,38 +345,10 @@ export function FinanceCenter() {
           ) : (
             <>
               <div className="panel form-grid">
-                <h2>Cobrança por pelada</h2>
-                <label className="wide">
-                  Pelada
-                  <select
-                    value={selectedGame}
-                    onChange={(e) => setGameId(e.target.value)}
-                  >
-                    {games.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {new Date(`${g.data}T12:00`).toLocaleDateString(
-                          "pt-BR",
-                        )}{" "}
-                        • {g.local}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  className="wide"
-                  disabled={!selectedGame}
-                  onClick={() =>
-                    run(
-                      () => generateCasualCharges(selectedGame, series.id),
-                      "Diaristas desta pelada cobrados.",
-                    )
-                  }
-                >
-                  GERAR COBRANÇAS DOS DIARISTAS
-                </button>
+                <h2>Cobranças de diaristas</h2>
                 <small className="wide">
-                  Cria cobrança somente para diaristas confirmados ou presentes
-                  nesta pelada.
+                  A cobrança é gerada automaticamente ao confirmar a presença
+                  do diarista na pelada.
                 </small>
               </div>
               {rows(casual)}

@@ -42,8 +42,8 @@ export async function saveFinanceConfig(id:string,values:{valor_mensalista:numbe
 export async function generateMonthlyCharges(seriesId:string,competencia:string){const {data,error}=await supabase.rpc('gerar_mensalidades',{p_serie_id:seriesId,p_competencia:competencia});if(error)throw error;return data as number}
 export async function settleMonthlyCharges(competencia:string){const {data,error}=await supabase.rpc('quitar_mensalidades_mes',{p_competencia:competencia});if(error)throw error;return data as number}
 export async function reopenMonthlyCharges(competencia:string){const {data,error}=await supabase.rpc('reabrir_mensalidades_mes',{p_competencia:competencia});if(error)throw error;return data as number}
-export async function generateCasualCharges(peladaId:string,seriesId:string){const {data,error}=await supabase.rpc('gerar_cobrancas_avulsas',{p_pelada_id:peladaId,p_serie_id:seriesId});if(error)throw error;return data as number}
 export async function updatePayment(id:string,status:Payment['status'],metodo:Payment['metodo_pagamento']=null){const {error}=await supabase.rpc('atualizar_pagamento',{p_pagamento_id:id,p_status:status,p_metodo:metodo});if(error)throw error}
+export async function deletePayment(id:string){const {error}=await supabase.rpc('remover_cobranca',{p_pagamento_id:id});if(error)throw error}
 export async function setPaymentConfirmationSuspension(id:string,suspend:boolean,reason?:string){const{error}=await supabase.rpc('admin_suspender_confirmacao_pagamento',{p_pagamento_id:id,p_suspender:suspend,p_motivo:reason??null});if(error)throw error}
 export async function refreshLatePayments(){const {error}=await supabase.rpc('atualizar_atrasados');if(error)throw error}
 export async function myPayments(){const{data,error}=await supabase.rpc('meus_pagamentos');if(error)throw error;return(data??[]) as Payment[]}
