@@ -311,6 +311,9 @@ export function ListPage() {
                       <button type="button" className="mini danger" onClick={() => presentSubstitutes.length && item.categoria === "linha" && item.status !== "espera" ? setAbsent(item) : void run(() => adminParticipantById(item.id, "faltou"), "Falta registrada.")}>Falta</button>
                     </>
                   )}
+                  {isAdmin && game.pelada_iniciada && item.status === "faltou" && (
+                    <button type="button" className="mini" onClick={() => confirm(`Desfazer a falta de ${name}?`) && void run(() => adminParticipantById(item.id, "presente"), "Falta desfeita; presença registrada.")}>DESFAZER FALTA</button>
+                  )}
                   {isAdmin && !game.pelada_iniciada && (
                     <>
                       {item.status === "aguardando_resposta" && (
