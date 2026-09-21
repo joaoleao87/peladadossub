@@ -6,40 +6,37 @@ import { useLoad } from "../hooks/useLoad";
 import { supabase } from "../lib/supabase";
 import { nativeMatchControls } from "../lib/nativeMatchControls";
 import { enqueueMatchCommand, flushMatchCommands, matchDeviceId, pendingMatchCommands } from "../lib/matchOffline";
-import type { ControlledMatchEvent, MatchControlSnapshot, TeamMember } from "../lib/database.types";
+import type { ControlledMatchEvent, MatchControlSnapshot, Participant } from "../lib/database.types";
 import { Empty, ErrorState, Spinner, Toast } from "../components/Ui";
 import { RecordingGallery } from "../components/RecordingGallery";
 import coinHeads from "../../docs/cara.png";
 import coinTails from "../../docs/coroa.png";
 import "./match-control.css";
 
-const eventLabels: Record<string,string> = { MATCH_STARTED:"Partida iniciada",GOAL:"Gol",HIGHLIGHT:"Lance importante",SUBSTITUTION:"Substituição",MATCH_FINISHED:"Partida finalizada" };
 const pad = (value:number) => String(value).padStart(2,"0");
 const formatClock = (ms:number) => `${pad(Math.floor(ms/60000))}:${pad(Math.floor(ms%60000/1000))}`;
-const formatEventTime = (value:string) => new Date(value).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 const playerName = (snapshot:MatchControlSnapshot,id:string) => {
   const item=snapshot.participants.find(row=>row.jogador_id===id);
   return item?.player?.apelido||item?.player?.nome||"Jogador";
 };
+const playerLabel = (player:Participant) => `${player.player?.apelido||player.player?.nome||"Jogador"}${player.categoria==="goleiro"?" (goleiro)":""}`;
 
-function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players:TeamMember[];onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>}) {
+function GoalDetails({event,players,onSaved}:{event:ControlledMatchEvent;players:Participant[];onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>}) {
   const [scorer,setScorer]=useState(event.player_id??""),[assist,setAssist]=useState(event.assist_player_id??""),[busy,setBusy]=useState(false);
-  if(event.status==="CANCELLED")return null;
   async function save(){if(!scorer)return;setBusy(true);try{await onSaved(event.id,scorer,assist||null)}finally{setBusy(false)}}
-  return <details className="goal-details" open={!event.player_id}>
-    <summary>{event.player_id?"Editar autor e assistência":"Atribuir autor do gol"}</summary>
-    <div>
-      <select aria-label="Autor do gol" value={scorer} onChange={item=>setScorer(item.target.value)}><option value="">Quem marcou?</option>{players.map(player=><option key={player.jogador_id} value={player.jogador_id}>{player.player?.apelido||player.player?.nome}</option>)}</select>
-      <select aria-label="Assistência do gol" value={assist} onChange={item=>setAssist(item.target.value)}><option value="">Sem assistência</option>{players.filter(player=>player.jogador_id!==scorer).map(player=><option key={player.jogador_id} value={player.jogador_id}>{player.player?.apelido||player.player?.nome}</option>)}</select>
-      <button className="mini" type="button" disabled={!scorer||busy} onClick={()=>void save()}>{busy?"SALVANDO…":"SALVAR GOL"}</button>
-    </div>
-  </details>
+  return <article className={`goal-details ${event.status==="CANCELLED"?"cancelled":""}`}>
+    <b>GOL • TIME {event.team_id}</b>
+    {event.status==="CANCELLED"?<small>Gol desfeito</small>:<div>
+      <label>Quem marcou?<select aria-label={`Autor do gol do time ${event.team_id}`} value={scorer} onChange={item=>setScorer(item.target.value)}><option value="">Selecione o jogador</option>{players.map(player=><option key={player.jogador_id} value={player.jogador_id}>{playerLabel(player)}</option>)}</select></label>
+      <label>Assistência (opcional)<select aria-label={`Assistência do gol do time ${event.team_id}`} value={assist} onChange={item=>setAssist(item.target.value)}><option value="">Sem assistência</option>{players.filter(player=>player.jogador_id!==scorer).map(player=><option key={player.jogador_id} value={player.jogador_id}>{playerLabel(player)}</option>)}</select></label>
+      <button className="mini" type="button" disabled={!scorer||busy} onClick={()=>void save()}>{busy?"SALVANDO…":"SALVAR"}</button>
+    </div>}
+  </article>
 }
 
 function MatchEvents({snapshot,onSaved}:{snapshot:MatchControlSnapshot;onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>}) {
-  const groups=new Map<number,ControlledMatchEvent[]>();
-  for(const event of snapshot.events){const number=event.match?.sequence_number??0;groups.set(number,[...(groups.get(number)??[]),event])}
-  return <section className="match-events panel"><h3>Eventos por partida</h3>{groups.size?[...groups.entries()].map(([number,events])=><div className="match-event-group" key={number}><h4>Partida {number||"sem partida"}</h4>{events.map(event=>{const eventPlayers=event.team_id?snapshot.teams.filter(member=>member.time===event.team_id):[];return <article className={event.status==="CANCELLED"?"cancelled":""} key={event.id}><div><b>{eventLabels[event.type]||event.type}{event.team_id?" • Time "+event.team_id:""}</b><span>{formatEventTime(event.corrected_created_at)}{event.status==="CANCELLED"?" • desfeito":""}</span></div>{event.player_id&&<small>Autor: {playerName(snapshot,event.player_id)}{event.assist_player_id?" • Assistência: "+playerName(snapshot,event.assist_player_id):""}</small>}{event.type==="GOAL"&&<GoalDetails event={event} players={eventPlayers} onSaved={onSaved}/>}</article>})}</div>):<small>Nenhum evento registrado.</small>}</section>;
+  const goals=snapshot.events.filter(event=>event.type==="GOAL");
+  return <section className="match-events panel"><h3>Gols e assistências</h3><p>Escolha qualquer participante da pelada, inclusive goleiros.</p>{goals.length?goals.map(event=><GoalDetails event={event} players={snapshot.participants} onSaved={onSaved} key={event.id}/>):<small>Nenhum gol registrado.</small>}</section>;
 }
 
 function CoinToss({onTossingChange}:{onTossingChange?:(value:boolean)=>void}) {
@@ -96,19 +93,14 @@ function MatchController({peladaId,onBack,showEvents=true}:{peladaId:string;onBa
     <p className="eyebrow">FUTSAL • PARTIDA {match.sequence_number}</p>
     <div className={`match-clock ${clock===0?"expired":""}`}>{formatClock(clock)}</div>
     <div className="match-score"><span>TIME {match.team_home}</span><strong>{match.score_home} <i>×</i> {match.score_away}</strong><span>TIME {match.team_away}</span></div>
-    <div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div>
     {twoGoalTeam!==null&&match.status==="RUNNING"&&<section className="match-finish-confirm panel"><b>TIME {twoGoalTeam} FEZ 2 GOLS</b><p>O segundo gol foi marcado. Encerrar esta partida agora?</p><div><button className="secondary" disabled={busy} onClick={()=>void run("desfazer_evento_partida",{p_match_id:match.id},"Gol desfeito.").then(done=>{if(done)setTwoGoalTeam(null)})}>↶ DESFAZER GOL</button><button disabled={busy} onClick={()=>finish()}>ENCERRAR PARTIDA</button><button type="button" className="link" disabled={busy} onClick={()=>setTwoGoalTeam(null)}>CONTINUAR PARTIDA</button></div></section>}
     {tieBreak&&match.status==="CREATED"&&<section className="match-finish-confirm panel"><b>DESEMPATE PENDENTE</b><p>Time {tieBreak.team_home} e Time {tieBreak.team_away} empataram. Escolha quem entra na frente.</p><CoinToss onTossingChange={setTossing}/><div><button disabled={busy||tossing} onClick={()=>resolveTieBreak(tieBreak.team_home)}>TIME {tieBreak.team_home} ENTRA</button><button disabled={busy||tossing} onClick={()=>resolveTieBreak(tieBreak.team_away)}>TIME {tieBreak.team_away} ENTRA</button></div></section>}
     {realProfile?.role==="superadmin"&&match.status==="CREATED"&&<details className="match-substitution panel"><summary>Trocar times desta partida</summary><p>Disponível antes de iniciar. Os times que saem voltam para o fim da fila.</p><div><label>Time mandante<select value={replacementHome||String(match.team_home)} onChange={event=>setReplacementHome(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><label>Time visitante<select value={replacementAway||String(match.team_away)} onChange={event=>setReplacementAway(event.target.value)}>{availableTeams.map(team=><option value={team} key={team}>Time {team}</option>)}</select></label><button disabled={busy} onClick={()=>void changeTeams()}>ATUALIZAR TIMES</button></div></details>}
-    {match.status==="CREATED"?<button className="match-start" disabled={busy||!!tieBreak} onClick={()=>{const id=crypto.randomUUID(),occurred=correctedNow();void run("iniciar_partida_controlada",{p_match_id:match.id,p_client_event_id:id,p_occurred_at:occurred},"Partida iniciada.",()=>{match.status="RUNNING";match.started_at=occurred;setTick(value=>value+1)})}}>▶ INICIAR PARTIDA</button>:match.status==="PAUSED"?<button className="match-start" disabled={busy} onClick={togglePause}>▶ RETOMAR PARTIDA</button>:<div className="match-actions">
+    {match.status==="CREATED"?<button className="match-start" disabled={busy||!!tieBreak} onClick={()=>{const id=crypto.randomUUID(),occurred=correctedNow();void run("iniciar_partida_controlada",{p_match_id:match.id,p_client_event_id:id,p_occurred_at:occurred},"Partida iniciada.",()=>{match.status="RUNNING";match.started_at=occurred;setTick(value=>value+1)})}}>▶ INICIAR PARTIDA</button>:match.status==="PAUSED"?<button className="match-start" disabled={busy} onClick={togglePause}>▶ RETOMAR PARTIDA</button>:<><div className="match-actions">
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_home)}>⚽ GOL TIME {match.team_home}</button>
       <button disabled={busy} onClick={()=>void addEvent("GOAL",match.team_away)}>⚽ GOL TIME {match.team_away}</button>
-      <button className="highlight" disabled={busy} onClick={()=>void addEvent("HIGHLIGHT",null)}>★ LANCE IMPORTANTE</button>
-      <button className="secondary" disabled={busy} onClick={togglePause}>❚❚ PAUSAR PARTIDA</button>
-      <button className="secondary" disabled={busy} onClick={()=>void run("desfazer_evento_partida",{p_match_id:match.id},"Último evento desfeito.")}>↶ DESFAZER</button>
-      <button className="danger" disabled={busy} onClick={()=>confirm("Finalizar esta partida e chamar os próximos times?")&&finish()}>■ FINALIZAR PARTIDA</button>
-    </div>}
-    <details className="match-substitution panel"><summary>Substituir jogadores</summary><p>Pode ser usado antes ou durante a partida.</p><div><label>Sai<select value={outId} onChange={event=>setOutId(event.target.value)}><option value="">Selecione</option>{outPlayers.map(member=><option value={member.jogador_id} key={member.jogador_id}>Time {member.time} • {member.player?.apelido||member.player?.nome}</option>)}</select></label><label>Entra<select value={inId} onChange={event=>setInId(event.target.value)}><option value="">Selecione</option>{incoming.map(item=><option value={item.jogador_id} key={item.jogador_id}>{playerName(snapshot,item.jogador_id)}</option>)}</select></label><button disabled={!outId||!inId||busy} onClick={()=>void substitute()}>CONFIRMAR TROCA</button></div></details>
+    </div><div className="match-time-actions"><button className="secondary" disabled={busy} onClick={togglePause}>❚❚ PAUSAR TEMPO</button><button className="link" disabled={busy} onClick={()=>void run("desfazer_evento_partida",{p_match_id:match.id},"Último evento desfeito.")}>↶ DESFAZER ÚLTIMO</button></div></>}
+    <details className="match-more panel"><summary>Mais opções</summary><div className="match-queue"><small>PRÓXIMOS</small>{snapshot.control.team_queue.length?snapshot.control.team_queue.map(team=><b key={team}>Time {team}</b>):<span>Sem times na fila</span>}</div><button className="secondary" disabled={busy||match.status!=="RUNNING"} onClick={()=>void addEvent("HIGHLIGHT",null)}>★ LANCE IMPORTANTE</button><button className="danger" disabled={busy||match.status!=="RUNNING"} onClick={()=>confirm("Finalizar esta partida e chamar os próximos times?")&&finish()}>■ FINALIZAR PARTIDA</button><details className="match-substitution"><summary>Substituir jogadores</summary><p>Pode ser usado antes ou durante a partida.</p><div><label>Sai<select value={outId} onChange={event=>setOutId(event.target.value)}><option value="">Selecione</option>{outPlayers.map(member=><option value={member.jogador_id} key={member.jogador_id}>Time {member.time} • {member.player?.apelido||member.player?.nome}</option>)}</select></label><label>Entra<select value={inId} onChange={event=>setInId(event.target.value)}><option value="">Selecione</option>{incoming.map(item=><option value={item.jogador_id} key={item.jogador_id}>{playerName(snapshot,item.jogador_id)}</option>)}</select></label><button disabled={!outId||!inId||busy} onClick={()=>void substitute()}>CONFIRMAR TROCA</button></div></details></details>
     {showEvents&&<MatchEvents snapshot={snapshot} onSaved={saveGoal}/>}
     <footer><span>{navigator.onLine?"● ONLINE":"○ OFFLINE"}{nativeMatchControls.available?" • CONTROLES NATIVOS ATIVOS":""}</span>{pending>0&&<b>{pending} pendente{pending===1?"":"s"}</b>}<small>Na tela bloqueada: anterior = gol esquerdo, próximo = gol direito, avançar = lance e voltar = desfazer.</small></footer>
     <Toast message={toast}/>
