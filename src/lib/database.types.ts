@@ -108,7 +108,7 @@ export interface ControlledMatch {
   status: ControlledMatchStatus;
 }
 export interface ControlledMatchEvent {
-  match?: { sequence_number: number };
+  match?: { sequence_number: number; team_home: number; team_away: number };
   id: string;
   client_event_id: string;
   pelada_id: string;
