@@ -1,6 +1,10 @@
 import { supabase } from './supabase'
 import type { CardCategory, ControlledMatch, ControlledMatchEvent, Expense, LinkRequest, ListPhase, ListPosition, MatchAwardResult, MatchCard, MatchControl, MatchControlSnapshot, MatchOperator, Participant, Payment, Pelada, PeladaSeries, Player, PlayerCardData, PlayerType, PlayerWithCard, Profile, RankingStats, Role, SuperAdminVote, TeamMember, VoteCategory } from './database.types'
 
+export interface TituloEleitoral{ id:string;nome_completo:string;titulo_eleitor:string;created_at:string }
+export async function enviarTituloEleitor(nome:string,titulo:string){const{error}=await supabase.rpc('enviar_titulo_eleitor',{p_nome_completo:nome,p_titulo_eleitor:titulo});if(error)throw error}
+export async function titulosEleitorais(){const{data,error}=await supabase.from('titulos_eleitorais').select('*').order('created_at',{ascending:false});if(error)throw error;return(data??[]) as TituloEleitoral[]}
+
 export async function nextPelada() { let result=await supabase.from('peladas').select('*').gte('data',new Date().toISOString().slice(0,10)).neq('status','cancelada').order('data').order('horario').limit(1).maybeSingle();if(result.error)throw result.error;if(result.data){const {error}=await supabase.rpc('sincronizar_fase_lista',{p_pelada_id:result.data.id});if(error)throw error;result=await supabase.from('peladas').select('*').eq('id',result.data.id).single()}if(result.error)throw result.error;return result.data as Pelada|null }
 export async function participants(peladaId: string) { const { data, error } = await supabase.from('pelada_participantes').select('*, profile:profiles!user_id(*), player:jogadores!jogador_id(*,profile:profiles!user_id(*))').eq('pelada_id', peladaId).neq('status', 'cancelado').order('ordem_entrada'); if (error) throw error; return data as Participant[] }
 export async function joinPelada(peladaId: string) { const { data, error } = await supabase.rpc('entrar_na_pelada', { p_pelada_id: peladaId }); if (error) throw error; return data as string }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import {Link} from 'react-router-dom';
 import { ErrorState, Spinner, Toast } from "../components/Ui";
 import { PlayerManager } from "../components/PlayerManager";
 import { PlayerControlPanel } from "../components/PlayerControlPanel";
@@ -96,6 +97,7 @@ export function Admin() {
     <section>
       <p className="eyebrow">DIRETORIA</p>
       <h1>Admin</h1>
+      <Link className="section-link" to="/admin/titulos-eleitorais"><span>Cadastros de título de eleitor</span><b>VER</b></Link>
       <div className="tabs">
         {(["pelada", "partida", "jogadores", "controle", "cartinhas", "notificacoes"] as const).map((x) => (
           <button
