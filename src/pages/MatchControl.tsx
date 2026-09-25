@@ -21,15 +21,22 @@ const playerName = (snapshot:MatchControlSnapshot,id:string) => {
 };
 const playerLabel = (player:Participant) => `${player.player?.apelido||player.player?.nome||"Jogador"}${player.categoria==="goleiro"?" (goleiro)":""}`;
 
+function PlayerSearch({label,ariaLabel,value,players,emptyLabel,onChange}:{label:string;ariaLabel:string;value:string;players:Participant[];emptyLabel:string;onChange:(value:string)=>void}) {
+  const selected=players.find(player=>player.jogador_id===value),[query,setQuery]=useState(()=>selected?playerLabel(selected):""),[open,setOpen]=useState(false);
+  const matches=useMemo(()=>players.filter(player=>playerLabel(player).toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR"))),[players,query]);
+  useEffect(()=>{if(!open)setQuery(selected?playerLabel(selected):"")},[open,selected]);
+  return <label>{label}<div className="player-search"><input type="search" aria-label={ariaLabel} value={query} placeholder="Buscar jogador" onFocus={()=>{setQuery("");setOpen(true)}} onChange={event=>{setQuery(event.target.value);setOpen(true);if(!event.target.value)onChange("")}}/>{open&&<div className="player-search-results">{matches.length?matches.map(player=><button type="button" key={player.jogador_id} onMouseDown={event=>event.preventDefault()} onClick={()=>{onChange(player.jogador_id);setQuery(playerLabel(player));setOpen(false)}}>{playerLabel(player)}</button>):<small>{emptyLabel}</small>}</div>}</div></label>
+}
 function GoalDetails({event,players,teamName,canDelete,onSaved,onDeleted}:{event:ControlledMatchEvent;players:Participant[];teamName:string;canDelete:boolean;onSaved:(eventId:string,playerId:string,assistId:string|null)=>Promise<void>;onDeleted:(eventId:string)=>Promise<void>}) {
   const [scorer,setScorer]=useState(event.player_id??""),[assist,setAssist]=useState(event.assist_player_id??""),[busy,setBusy]=useState(false);
+  const sortedPlayers=useMemo(()=>[...players].sort((a,b)=>playerLabel(a).localeCompare(playerLabel(b),"pt-BR",{sensitivity:"base"})),[players]);
   async function save(){if(!scorer)return;setBusy(true);try{await onSaved(event.id,scorer,assist||null)}finally{setBusy(false)}}
   async function remove(){if(!confirm("Remover este gol? O placar e as estatísticas serão corrigidos."))return;setBusy(true);try{await onDeleted(event.id)}finally{setBusy(false)}}
   return <article className={`goal-details ${event.status==="CANCELLED"?"cancelled":""}`}>
     <b>GOL • {teamName}</b>
     {event.status==="CANCELLED"?<small>Gol desfeito</small>:<div>
-      <label>Quem marcou?<select aria-label={`Autor do gol do ${teamName}`} value={scorer} onChange={item=>setScorer(item.target.value)}><option value="">Selecione o jogador</option>{players.map(player=><option key={player.jogador_id} value={player.jogador_id}>{playerLabel(player)}</option>)}</select></label>
-      <label>Assistência (opcional)<select aria-label={`Assistência do gol do ${teamName}`} value={assist} onChange={item=>setAssist(item.target.value)}><option value="">Sem assistência</option>{players.filter(player=>player.jogador_id!==scorer).map(player=><option key={player.jogador_id} value={player.jogador_id}>{playerLabel(player)}</option>)}</select></label>
+      <PlayerSearch label="Quem marcou?" ariaLabel={`Autor do gol do ${teamName}`} value={scorer} players={sortedPlayers} emptyLabel="Nenhum jogador encontrado." onChange={setScorer}/>
+      <PlayerSearch label="Assistência (opcional)" ariaLabel={`Assistência do gol do ${teamName}`} value={assist} players={sortedPlayers.filter(player=>player.jogador_id!==scorer)} emptyLabel="Nenhum jogador encontrado." onChange={setAssist}/>
       <button className="mini" type="button" disabled={!scorer||busy} onClick={()=>void save()}>{busy?"SALVANDO…":"SALVAR"}</button>{canDelete&&<button className="goal-delete" type="button" disabled={busy} onClick={()=>void remove()}>REMOVER GOL</button>}
     </div>}
   </article>
